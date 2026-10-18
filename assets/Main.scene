@@ -24,7 +24,11 @@
       }
     ],
     "_active": true,
-    "_components": [],
+    "_components": [
+      {
+        "__id__": 16
+      }
+    ],
     "_prefab": null,
     "_lpos": {
       "__type__": "cc.Vec3",
@@ -127,9 +131,9 @@
       "__id__": 4
     },
     "_visibility": -325058561,
-    "_illuminanceHDR": 65000,
-    "_illuminance": 65000,
-    "_illuminanceLDR": 1.6927083333333335,
+    "_illuminanceHDR": 22000,
+    "_illuminance": 22000,
+    "_illuminanceLDR": 0.7,
     "_shadowEnabled": false,
     "_shadowPcf": 0,
     "_shadowBias": 0.00001,
@@ -210,11 +214,11 @@
     },
     "_enabled": true,
     "__prefab": null,
-    "_projection": 1,
+    "_projection": 0,
     "_priority": 0,
     "_fov": 45,
     "_fovAxis": 0,
-    "_orthoHeight": 10,
+    "_orthoHeight": 9,
     "_near": 1,
     "_far": 1000,
     "_color": {
@@ -291,8 +295,8 @@
       "z": 0.8,
       "w": 0.520833125
     },
-    "_skyIllumHDR": 20000,
-    "_skyIllum": 20000,
+    "_skyIllumHDR": 6000,
+    "_skyIllum": 6000,
     "_groundAlbedoHDR": {
       "__type__": "cc.Vec4",
       "x": 0.2,
@@ -314,7 +318,7 @@
       "z": 0.755699,
       "w": 0
     },
-    "_skyIllumLDR": 0.8,
+    "_skyIllumLDR": 0.3,
     "_groundAlbedoLDR": {
       "__type__": "cc.Vec4",
       "x": 0.618555,
@@ -366,7 +370,7 @@
     },
     "_diffuseMapHDR": null,
     "_diffuseMapLDR": null,
-    "_enabled": true,
+    "_enabled": false,
     "_useHDR": true,
     "_editableMaterial": null,
     "_reflectionHDR": null,
@@ -430,5 +434,21 @@
   {
     "__type__": "cc.PostSettingsInfo",
     "_toneMappingType": 0
+  },
+  {
+    "__type__": "c66acON881Gkbbzq+nDzjk9",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "_id": "rezonbi-bootstrap",
+    "surfaceEffect": {
+      "__uuid__": "c8f66d17-351a-48da-a12c-0212d28575c4",
+      "__expectedType__": "cc.EffectAsset"
+    }
   }
 ]
