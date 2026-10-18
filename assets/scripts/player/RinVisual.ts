@@ -1,4 +1,4 @@
-import { Node } from 'cc';
+import { Material, MeshRenderer, Node } from 'cc';
 import { Palette as P } from '../core/GameConfig';
 import { GeometryFactory } from '../levels/GeometryFactory';
 
@@ -12,6 +12,15 @@ export class RinVisual {
     private leftArm: Node;
     private rightArm: Node;
     private phase = 0;
+    private action = '';
+    private actionTime = 0;
+    private actionLength = 0;
+    private dead = false;
+    private flashTime = 0;
+    private renderers: MeshRenderer[] = [];
+    private originalMaterials: (Material | null)[] = [];
+    private flashMaterial: Material;
+    private muzzle: Node;
     constructor(parent: Node, g: GeometryFactory) {
         this.root = new Node('VisualRoot'); parent.addChild(this.root);
         const part = (name: string, c: string, x: number, y: number, z: number, sx: number, sy: number, sz: number, round = false) =>
@@ -50,20 +59,49 @@ export class RinVisual {
         }
         const weapon = new Node('WeaponAnchor'); this.rightArm.addChild(weapon); weapon.setPosition(0, -0.4, -0.1);
         g.part(weapon, 'Pistol', '#596071', 0, 0, -0.13, 0.12, 0.13, 0.37);
+        this.muzzle = g.part(weapon, 'Muzzle flash', '#FFE5A8', 0, 0, -0.38, 0.2, 0.2, 0.3, true);
+        this.muzzle.active = false;
         part('Knife sheath', '#555365', -0.29, 0.8, 0.08, 0.09, 0.35, 0.12);
         part('Jacket ribbon', P.pink, 0.28, 0.86, 0.1, 0.08, 0.32, 0.04);
         for (const name of ['AttackOrigin', 'CameraTarget', 'EffectsRoot']) {
             const node = new Node(name); parent.addChild(node);
             node.setPosition(0, name === 'AttackOrigin' ? 1.1 : 0.9, name === 'AttackOrigin' ? -0.5 : 0);
         }
+        this.renderers = this.root.getComponentsInChildren(MeshRenderer);
+        this.originalMaterials = this.renderers.map(r => r.getSharedMaterial(0));
+        this.flashMaterial = g.material('#FFE5E5');
+    }
+    play(action: 'shoot' | 'slash' | 'dodge' | 'hurt' | 'die', duration: number): void {
+        if (this.dead) return;
+        if (action === 'hurt') this.flashTime = duration;
+        if (action === 'die') this.dead = true;
+        this.action = action; this.actionTime = this.actionLength = duration;
+    }
+    reset(): void {
+        this.dead = false; this.action = ''; this.actionTime = this.flashTime = 0;
+        this.root.setRotationFromEuler(0, 0, 0); this.root.setScale(1, 1, 1); this.animate(0, 0);
     }
     animate(dt: number, moving: number): void {
+        this.actionTime = Math.max(0, this.actionTime - dt); this.flashTime = Math.max(0, this.flashTime - dt);
+        const progress = 1 - this.actionTime / Math.max(0.001, this.actionLength);
         this.phase += dt * (moving > 0.05 ? 11 : 2);
         const swing = Math.sin(this.phase) * 27 * moving;
         this.leftLeg.setRotationFromEuler(swing, 0, 0);
         this.rightLeg.setRotationFromEuler(-swing, 0, 0);
         this.leftArm.setRotationFromEuler(-swing * 0.7, 0, 5);
         this.rightArm.setRotationFromEuler(swing * 0.35 - 12, 0, -5);
-        this.root.setPosition(0, Math.abs(Math.sin(this.phase)) * 0.045 * moving, 0);
+        this.root.setPosition(0, Math.abs(Math.sin(this.phase)) * (moving > 0.05 ? 0.045 * moving : 0.012), 0);
+        this.root.setScale(1, this.action === 'dodge' && this.actionTime > 0 ? 0.72 : 1, 1);
+        this.root.setRotationFromEuler(0, 0, this.dead ? Math.min(1, progress) * 82 : 0);
+        this.muzzle.active = this.action === 'shoot' && this.actionTime > this.actionLength - 0.07;
+        if (this.actionTime > 0) {
+            if (this.action === 'shoot') this.rightArm.setRotationFromEuler(-75 - Math.sin(progress * Math.PI) * 20, 0, -5);
+            if (this.action === 'slash') this.leftArm.setRotationFromEuler(-70, -70 + progress * 140, -35);
+            if (this.action === 'hurt') this.root.setRotationFromEuler(-12 * Math.sin(progress * Math.PI), 0, 0);
+        }
+        this.renderers.forEach((r, i) => {
+            const material = this.flashTime > 0 ? this.flashMaterial : this.originalMaterials[i];
+            if (material && r.getSharedMaterial(0) !== material) r.setSharedMaterial(material, 0);
+        });
     }
 }

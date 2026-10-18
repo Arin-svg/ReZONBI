@@ -6,9 +6,10 @@ import { PlayerController } from '../player/PlayerController';
 import { RinVisual } from '../player/RinVisual';
 import { buildExplorationHUD } from '../ui/ExplorationHUD';
 import { GameConfig as C, Palette } from './GameConfig';
+import { CombatEncounter } from './CombatEncounter';
 const { ccclass, property } = _decorator;
 
-/** Attached to Main.scene. Creates the entire M1 graph, with no editor-only APIs. */
+/** Attached to Main.scene. Creates the M1 arena and connected M2 encounter. */
 @ccclass('GameBootstrap')
 export class GameBootstrap extends Component {
     // Serialized reference keeps the standard effect in both web and RPK builds.
@@ -30,6 +31,8 @@ export class GameBootstrap extends Component {
         camera.clearFlags = Camera.ClearFlag.SOLID_COLOR; camera.clearColor = new Color().fromHEX(Palette.navy);
         cameraNode.addComponent(IsometricCamera).target = rin;
         player.joystick = buildExplorationHUD(this.node, player);
+        const encounterNode = new Node('Combat Encounter'); this.node.addChild(encounterNode);
+        encounterNode.addComponent(CombatEncounter).initialize(player, this.geometry, obstacles);
     }
     onDestroy(): void { this.geometry?.destroy(); }
 }

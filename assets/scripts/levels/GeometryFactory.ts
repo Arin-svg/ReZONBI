@@ -14,6 +14,10 @@ export class GeometryFactory {
         node.setScale(sx, sy, sz);
         const renderer = node.addComponent(MeshRenderer);
         renderer.mesh = rounded ? this.sphereMesh : this.boxMesh;
+        renderer.setSharedMaterial(this.material(color), 0);
+        return node;
+    }
+    material(color: string): Material {
         let material = this.materials.get(color);
         if (!material) {
             material = new Material();
@@ -22,8 +26,7 @@ export class GeometryFactory {
             material.setProperty('roughness', 0.9);
             this.materials.set(color, material);
         }
-        renderer.setSharedMaterial(material, 0);
-        return node;
+        return material;
     }
     destroy(): void {
         this.materials.forEach(m => m.destroy());

@@ -13,3 +13,13 @@ export const Palette = {
     concrete: '#414A60', wall: '#35415A', roof: '#252D43',
     skin: '#DFC0B8', hair: '#151723', glass: '#46677C',
 };
+
+export const CombatConfig = {
+    maxHP: 400, hitProtection: 0.35,
+    pistolDamage: 24, pistolInterval: 0.25, pistolRange: 12,
+    knifeDamage: 40, knifeRange: 2.2, knifeCooldown: 0.6, knifeArc: 110,
+    dodgeDistance: 3.5, dodgeDuration: 0.25, dodgeCooldown: 3, dodgeInvulnerability: 0.25,
+    enemyRadius: 0.34, maxEnemies: 5, repathInterval: 0.5,
+    walker: { hp: 80, speed: 2, damage: 15, range: 1.4, cooldown: 1.5, detection: 8, windup: 0.38 },
+    runner: { hp: 50, speed: 3.8, damage: 10, range: 1.3, cooldown: 0.9, detection: 11, windup: 0.25 },
+};

@@ -3,25 +3,25 @@ import { Palette as P } from '../core/GameConfig';
 import { PlayerController } from '../player/PlayerController';
 import { MobileJoystick } from './MobileJoystick';
 
-function ui(parent: Node, name: string, width: number, height: number): Node {
+export function ui(parent: Node, name: string, width: number, height: number): Node {
     const node = new Node(name); node.layer = Layers.Enum.UI_2D; parent.addChild(node);
     node.addComponent(UITransform).setContentSize(width, height); return node;
 }
-function pin(node: Node, horizontal: 'left' | 'right', vertical: 'top' | 'bottom', x: number, y: number): void {
+export function pin(node: Node, horizontal: 'left' | 'right', vertical: 'top' | 'bottom', x: number, y: number): void {
     const widget = node.addComponent(Widget);
     widget.isAlignLeft = horizontal === 'left'; widget.isAlignRight = horizontal === 'right';
     widget.isAlignTop = vertical === 'top'; widget.isAlignBottom = vertical === 'bottom';
     widget.left = widget.right = x; widget.top = widget.bottom = y;
     widget.alignMode = Widget.AlignMode.ALWAYS;
 }
-function label(parent: Node, name: string, text: string, width: number, height: number, size: number): Node {
+export function label(parent: Node, name: string, text: string, width: number, height: number, size: number): Node {
     const node = ui(parent, name, width, height);
     const textNode = ui(node, 'Text', width, height); const l = textNode.addComponent(Label);
     l.string = text; l.fontSize = size; l.lineHeight = size + 6;
     l.color = new Color().fromHEX(P.white); l.horizontalAlign = Label.HorizontalAlign.CENTER;
     l.verticalAlign = Label.VerticalAlign.CENTER; return node;
 }
-function panel(node: Node, width: number, height: number): void {
+export function panel(node: Node, width: number, height: number): void {
     const background = ui(node, 'Panel', width, height); background.setSiblingIndex(0);
     const g = background.addComponent(Graphics); g.fillColor = new Color(23, 29, 48, 224);
     g.roundRect(-width / 2, -height / 2, width, height, 12); g.fill();

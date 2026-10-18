@@ -1,0 +1,101 @@
+import { _decorator, Component, EventKeyboard, EventMouse, game, Game, input, Input, KeyCode, Vec2 } from 'cc';
+import { CombatConfig as C } from '../core/GameConfig';
+import { Obstacle } from '../core/MovementMath';
+import { ZombieBase } from '../enemies/ZombieBase';
+import { CombatEffects } from '../systems/CombatEffects';
+import { clearLine, inArc, nearestVisible } from '../systems/CombatMath';
+import { PlayerController } from './PlayerController';
+import { PlayerHealth } from './PlayerHealth';
+const { ccclass } = _decorator;
+
+export interface CombatContext {
+    player: PlayerController; health: PlayerHealth; effects: CombatEffects;
+    enemies: () => readonly ZombieBase[]; obstacles: readonly Obstacle[];
+    canAct: () => boolean; nextHit: () => number; pause: () => void;
+}
+@ccclass('PlayerCombat')
+export class PlayerCombat extends Component {
+    context!: CombatContext;
+    pistolCooldown = 0;
+    knifeCooldown = 0;
+    dodgeCooldown = 0;
+    shotsFired = 0;
+    blocksMouse: (p: Vec2) => boolean = () => false;
+    private sources = new Set<string>();
+    private keys = new Set<KeyCode>();
+    private escapeHeld = false;
+    private trailTimer = 0;
+    get firing(): boolean { return this.sources.size > 0; }
+    onEnable(): void {
+        input.on(Input.EventType.KEY_DOWN, this.keyDown, this); input.on(Input.EventType.KEY_UP, this.keyUp, this);
+        input.on(Input.EventType.MOUSE_DOWN, this.mouseDown, this); input.on(Input.EventType.MOUSE_UP, this.mouseUp, this);
+        game.on(Game.EVENT_HIDE, this.clearInput, this);
+    }
+    onDisable(): void {
+        input.off(Input.EventType.KEY_DOWN, this.keyDown, this); input.off(Input.EventType.KEY_UP, this.keyUp, this);
+        input.off(Input.EventType.MOUSE_DOWN, this.mouseDown, this); input.off(Input.EventType.MOUSE_UP, this.mouseUp, this);
+        game.off(Game.EVENT_HIDE, this.clearInput, this); this.clearInput();
+    }
+    setFire(source: string, held: boolean): void {
+        if (held && this.context?.canAct()) this.sources.add(source); else this.sources.delete(source);
+    }
+    clearInput(): void { this.sources.clear(); this.keys.clear(); }
+    reset(): void { this.clearInput(); this.pistolCooldown = this.knifeCooldown = this.dodgeCooldown = this.trailTimer = this.shotsFired = 0; }
+    private keyDown(e: EventKeyboard): void {
+        if (e.keyCode === KeyCode.ESCAPE) {
+            if (!this.escapeHeld) { this.escapeHeld = true; this.context?.pause(); }
+            return;
+        }
+        if (this.keys.has(e.keyCode)) return; this.keys.add(e.keyCode);
+        if (e.keyCode === KeyCode.KEY_J) this.setFire('keyboard', true);
+        if (e.keyCode === KeyCode.KEY_K) this.knife();
+        if (e.keyCode === KeyCode.SPACE) this.dodge();
+    }
+    private keyUp(e: EventKeyboard): void { if (e.keyCode === KeyCode.ESCAPE) this.escapeHeld = false; this.keys.delete(e.keyCode); if (e.keyCode === KeyCode.KEY_J) this.setFire('keyboard', false); }
+    private mouseDown(e: EventMouse): void { if (e.getButton() === 0 && !this.blocksMouse(e.getLocation())) this.setFire('mouse', true); }
+    private mouseUp(e: EventMouse): void { if (e.getButton() === 0) this.setFire('mouse', false); }
+    tick(dt: number): void {
+        this.pistolCooldown = Math.max(0, this.pistolCooldown - dt);
+        this.knifeCooldown = Math.max(0, this.knifeCooldown - dt);
+        this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
+        if (this.firing) this.shoot();
+        this.trailTimer -= dt;
+        if (this.context.player.dodgeRemaining > 0 && this.trailTimer <= 0) {
+            this.context.effects.impact(this.node.position, '#67B7C6'); this.trailTimer = 0.06;
+        }
+    }
+    shoot(): boolean {
+        if (!this.context?.canAct() || this.pistolCooldown > 1e-6 || this.context.player.dodgeRemaining > 0) return false;
+        this.pistolCooldown = C.pistolInterval; this.shotsFired++;
+        const origin = this.node.position;
+        const target = nearestVisible(origin, this.context.enemies(), C.pistolRange, this.context.obstacles);
+        let end = { x: origin.x + this.node.forward.x * C.pistolRange, z: origin.z + this.node.forward.z * C.pistolRange };
+        if (target) {
+            end = { x: target.position.x, z: target.position.z }; this.context.player.face(end.x - origin.x, end.z - origin.z);
+            target.receiveDamage({ amount: C.pistolDamage, id: this.context.nextHit(), source: 'Rin', kind: 'pistol' });
+        } else {
+            // A miss still stops its tracer at solid geometry.
+            for (let step = 0.2; step <= C.pistolRange; step += 0.2) {
+                const p = { x: origin.x + this.node.forward.x * step, z: origin.z + this.node.forward.z * step };
+                if (!clearLine(origin, p, this.context.obstacles)) { end = p; break; }
+            }
+        }
+        this.context.effects.line(origin, end, '#FFE5A8'); this.context.player.visual?.play('shoot', 0.16); return true;
+    }
+    knife(): boolean {
+        if (!this.context?.canAct() || this.knifeCooldown > 1e-6 || this.context.player.dodgeRemaining > 0) return false;
+        this.knifeCooldown = C.knifeCooldown;
+        const origin = this.node.position, facing = this.node.forward, id = this.context.nextHit();
+        for (const enemy of this.context.enemies()) if (!enemy.dead && enemy.active &&
+            inArc(origin, facing, enemy.position, C.knifeRange, C.knifeArc) && clearLine(origin, enemy.position, this.context.obstacles)) {
+            enemy.receiveDamage({ amount: C.knifeDamage, id, source: 'Rin', kind: 'knife' });
+        }
+        this.context.effects.slash(origin, facing, C.knifeRange, C.knifeArc); this.context.player.visual?.play('slash', 0.28); return true;
+    }
+    dodge(): boolean {
+        if (!this.context?.canAct() || this.dodgeCooldown > 1e-6) return false;
+        this.dodgeCooldown = C.dodgeCooldown;
+        this.context.health.state.invulnerability = C.dodgeInvulnerability;
+        this.context.player.beginDodge(C.dodgeDistance, C.dodgeDuration); return true;
+    }
+}
