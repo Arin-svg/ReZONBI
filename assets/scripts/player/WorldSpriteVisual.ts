@@ -82,6 +82,7 @@ export class WorldSpriteVisual implements CharacterVisual {
         effect: EffectAsset,
         private kind: 'rin' | 'walker' | 'runner' | 'boss' = 'rin',
         private actions: Texture2D | null = null,
+        private runRightAtlas: Texture2D | null = null,
     ) {
 
         const nodeName =
@@ -98,17 +99,17 @@ export class WorldSpriteVisual implements CharacterVisual {
         // This does not change gameplay collisions.
         const size =
             kind === 'boss' ? 4.2 :
-            kind === 'rin' ? 2.875 :
-            kind === 'runner' ? 2.1 :
-            2.3;
+                kind === 'rin' ? 2.875 :
+                    kind === 'runner' ? 2.1 :
+                        2.3;
 
         // Bottom-center origin keeps the feet near the actor.
         this.mesh = utils.createMesh({
             positions: [
                 -size / 2, -0.04, 0,
-                 size / 2, -0.04, 0,
+                size / 2, -0.04, 0,
                 -size / 2, size - 0.04, 0,
-                 size / 2, size - 0.04, 0,
+                size / 2, size - 0.04, 0,
             ],
 
             normals: [
@@ -317,63 +318,82 @@ export class WorldSpriteVisual implements CharacterVisual {
         const frame =
             this.direction * (useAction ? 5 : 4) + column;
 
+        const useRunRight =
+            this.kind === 'rin' &&
+            this.runRightAtlas !== null &&
+            this.state === 'run' &&
+            this.direction === 3;
+
+        const runRightFrame = Math.floor(this.age * 12) % 8;
+
         const textureKey =
-            useAction ? 'actions' : 'locomotion';
+            useAction ? 'actions' :
+                useRunRight ? 'run-right' :
+                    'locomotion';
+
+        const selectedFrame = useRunRight ? runRightFrame : frame;
 
         if (
-            frame !== this.frame ||
+            selectedFrame !== this.frame ||
             textureKey !== this.textureKey
         ) {
-
-            this.frame = frame;
+            this.frame = selectedFrame;
             this.textureKey = textureKey;
 
-            this.material.setProperty(
-                'mainTexture',
-                useAction ? this.actions! : this.texture,
-            );
+            if (useRunRight) {
+                this.material.setProperty(
+                    'mainTexture',
+                    this.runRightAtlas!,
+                );
 
-            const rows = useAction
-                ? [0, 305, 589, 852, 1122]
-                : this.kind === 'rin'
-                    ? [0, 324, 635, 933, 1234]
-                    : [0, 319, 632, 929, 1244];
+                // Eight equal-width frames in one horizontal row.
+                this.uv.set(1 / 8, 1, runRightFrame / 8, 0);
 
-            const width = useAction
-                ? 1402
-                : this.kind === 'rin'
-                    ? 1274
-                    : 1264;
+            } else {
+                this.material.setProperty(
+                    'mainTexture',
+                    useAction ? this.actions! : this.texture,
+                );
 
-            const height = rows[4];
+                const rows = useAction
+                    ? [0, 305, 589, 852, 1122]
+                    : this.kind === 'rin'
+                        ? [0, 324, 635, 933, 1234]
+                        : [0, 319, 632, 929, 1244];
 
-            const columns = useAction
-                ? [0, 295, 603, 882, 1094, 1402]
-                : [
-                    0,
-                    width / 4,
-                    width / 2,
-                    width * 3 / 4,
-                    width,
-                ];
+                const width = useAction
+                    ? 1402
+                    : this.kind === 'rin'
+                        ? 1274
+                        : 1264;
 
-            const top = rows[this.direction] + 1;
-            const bottom = rows[this.direction + 1] - 1;
+                const height = rows[4];
 
-            const left = columns[column] + 1;
-            const right = columns[column + 1] - 1;
+                const columns = useAction
+                    ? [0, 295, 603, 882, 1094, 1402]
+                    : [
+                        0,
+                        width / 4,
+                        width / 2,
+                        width * 3 / 4,
+                        width,
+                    ];
 
-            this.uv.set(
-                (right - left) / width,
-                (bottom - top) / height,
-                left / width,
-                top / height,
-            );
+                const top = rows[this.direction] + 1;
+                const bottom = rows[this.direction + 1] - 1;
 
-            this.material.setProperty(
-                'tilingOffset',
-                this.uv,
-            );
+                const left = columns[column] + 1;
+                const right = columns[column + 1] - 1;
+
+                this.uv.set(
+                    (right - left) / width,
+                    (bottom - top) / height,
+                    left / width,
+                    top / height,
+                );
+            }
+
+            this.material.setProperty('tilingOffset', this.uv);
         }
 
         // ---------------------------------------------
