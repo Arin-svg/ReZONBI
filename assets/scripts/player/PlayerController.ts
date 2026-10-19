@@ -2,14 +2,14 @@ import { _decorator, Component, EventKeyboard, game, Game, input, Input, KeyCode
 import { GameConfig as C } from '../core/GameConfig';
 import { approach, cameraRelative, moveAndSlide, Obstacle } from '../core/MovementMath';
 import { MobileJoystick } from '../ui/MobileJoystick';
-import { RinVisual } from './RinVisual';
+import { CharacterVisual } from './CharacterVisual';
 const { ccclass } = _decorator;
 
 @ccclass('PlayerController')
 export class PlayerController extends Component {
     obstacles: readonly Obstacle[] = [];
     joystick: MobileJoystick | null = null;
-    visual: RinVisual | null = null;
+    visual: CharacterVisual | null = null;
     paused = false;
     dead = false;
     dodgeRemaining = 0;

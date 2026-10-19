@@ -449,6 +449,10 @@
     "surfaceEffect": {
       "__uuid__": "c8f66d17-351a-48da-a12c-0212d28575c4",
       "__expectedType__": "cc.EffectAsset"
-    }
+    },
+    "rinSpriteAtlas": { "__uuid__": "acf17954-1b40-476e-ac39-10c82455ee4e@6c48a", "__expectedType__": "cc.Texture2D" },
+    "rinActionAtlas": { "__uuid__": "7ddc47d1-4a1f-4fad-b39c-14e0d035294d@6c48a", "__expectedType__": "cc.Texture2D" },
+    "infectedAtlas": { "__uuid__": "f5635905-f4fc-4f1d-b3a9-ad10ff908573@6c48a", "__expectedType__": "cc.Texture2D" },
+    "spriteEffect": { "__uuid__": "a3cd009f-0ab0-420d-9278-b9fdab939bbc", "__expectedType__": "cc.EffectAsset" }
   }
 ]

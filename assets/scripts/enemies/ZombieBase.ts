@@ -14,9 +14,12 @@ export type ZombieKind = 'walker' | 'runner';
 export interface ZombieContext {
     player: Node; health: PlayerHealth; obstacles: readonly Obstacle[];
     navigation: ArenaNavigation; effects: CombatEffects; peers: () => readonly ZombieBase[]; nextHit: () => number;
+    onDeath?: (enemy: ZombieBase, hit: DamageHit) => void;
+    onHit?: (enemy: ZombieBase, amount: number) => void;
 }
 @ccclass('ZombieBase')
 export class ZombieBase extends Component implements Damageable {
+    onDestroy(): void { this.visual?.destroy(); }
     kind: ZombieKind = 'walker';
     state: ZombieState = 'Idle';
     health!: HealthState;
@@ -39,7 +42,10 @@ export class ZombieBase extends Component implements Damageable {
         this.kind = kind; this.stats = C[kind]; this.context = context; this.spawn = spawn;
         this.health = new HealthState(this.stats.hp); this.visual = new ZombieVisual(this.node, geometry, kind === 'runner'); this.reset();
     }
-    reset(): void {
+    reset(spawn?: PointXZ, strength = 1): void {
+        if (spawn) this.spawn = { x: spawn.x, z: spawn.z };
+        this.stats = { ...C[this.kind], hp: Math.round(C[this.kind].hp * strength), damage: Math.round(C[this.kind].damage * strength) };
+        this.health = new HealthState(this.stats.hp);
         this.node.active = true; this.node.setPosition(this.spawn.x, 0.06, this.spawn.z);
         this.node.setRotationFromEuler(0, 0, 0); this.health.reset(); this.state = 'Idle';
         this.path = []; this.repath = this.cooldown = this.attackTime = this.hurtTime = this.stunTime = this.deathTime = 0;
@@ -53,8 +59,9 @@ export class ZombieBase extends Component implements Damageable {
     stun(duration: number): void { if (!this.dead) { this.stunTime = Math.max(this.stunTime, duration); this.state = 'Stunned'; this.attackTime = 0; } }
     receiveDamage(hit: DamageHit): boolean {
         if (!this.health.damage(hit)) return false;
+        this.context.onHit?.(this, hit.amount);
         this.hurtTime = 0.15; this.context.effects.impact(this.position);
-        if (this.dead) { this.state = 'Dead'; this.deathTime = 0.001; this.attackTime = 0; }
+        if (this.dead) { this.state = 'Dead'; this.deathTime = 0.001; this.attackTime = 0; this.context.onDeath?.(this, hit); }
         else if (this.state !== 'Stunned') { this.state = 'Chase'; this.repath = 0; }
         return true;
     }
@@ -115,7 +122,7 @@ export class ZombieBase extends Component implements Damageable {
         let dx = this.path[0].x - this.position.x, dz = this.path[0].z - this.position.z;
         const length = Math.hypot(dx, dz); dx /= Math.max(length, 0.001); dz /= Math.max(length, 0.001);
         for (const other of this.context.peers()) {
-            if (other === this || other.dead) continue;
+            if (other === this || !other.active || other.dead) continue;
             const d = distance(this.position, other.position);
             if (d < 0.85 && d > 0.001) { dx += (this.position.x - other.position.x) / d * (0.85 - d) * 2; dz += (this.position.z - other.position.z) / d * (0.85 - d) * 2; }
         }

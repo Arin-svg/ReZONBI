@@ -5,7 +5,7 @@
 const fs = require('node:fs');
 (async () => {
     const targets = await (await fetch('http://localhost:9333/json')).json();
-    const target = targets.find(t => t.type === 'page' && /^http:\/\/localhost:(7456|7457)/.test(t.url));
+    const target = targets.find(t => t.type === 'page' && /^http:\/\/(localhost|127\.0\.0\.1):(7456|7457)/.test(t.url));
     if (!target) throw Error('Cocos preview test tab not found');
     const socket = new WebSocket(target.webSocketDebuggerUrl);
     const pending = new Map(); let sequence = 0;

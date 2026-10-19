@@ -10,8 +10,15 @@ const assert=require('node:assert/strict'),delay=ms=>new Promise(r=>setTimeout(r
   await send('Runtime.enable');errors.length=0;
   await send('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:1,mobile:false});
   await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5});
+  // Start at the chosen viewport, rather than inheriting a resized canvas from another test.
+  const url = process.argv[2] || await evaluate('location.href');
+  await send('Page.navigate',{url});
+  let ready=false;for(let i=0;i<60;i++){await delay(500);ready=await evaluate(`typeof cc!=='undefined'&&!!cc.director.getScene()?.getChildByName('Combat Encounter')?.getComponent('CombatEncounter')?.hud`);if(ready)break;}
+  assert.ok(ready,'Combat scene loaded');
   await evaluate(`window.scene=cc.director.getScene();window.enc=scene.getChildByName('Combat Encounter').getComponent('CombatEncounter');window.safe=scene.getChildByName('Mobile Canvas').getChildByName('Safe area');enc.restart();cc.director.resume();void 0`);
-  await mouse('mousePressed',640,360);await delay(350);await mouse('mouseReleased',640,360);
+  await mouse('mousePressed',640,360);
+  for(let i=0;i<20;i++){await delay(100);if(await evaluate('enc.combat.shotsFired>=2'))break;}
+  await mouse('mouseReleased',640,360);
   assert.ok(await evaluate('enc.combat.shotsFired>=2&&!enc.combat.firing'));console.log('PASS left mouse hold-to-fire and release');
   await evaluate('enc.restart();void 0');const k=await point('Knife button');
   await mouse('mousePressed',k.x,k.y);await mouse('mouseReleased',k.x,k.y);await delay(100);

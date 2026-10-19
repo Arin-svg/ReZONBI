@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 (async () => {
     const targets = await (await fetch('http://localhost:9333/json')).json();
-    const target = targets.find(t=>t.type==='page' && /^http:\/\/localhost:(7456|7457)/.test(t.url));
+    const target = targets.find(t=>t.type==='page' && /^http:\/\/(localhost|127\.0\.0\.1):(7456|7457)/.test(t.url));
     const socket = new WebSocket(target.webSocketDebuggerUrl);
     let sequence=0; const pending=new Map(), errors=[];
     socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);m.error?p.reject(m.error):p.resolve(m.result);}else if(m.method==='Runtime.exceptionThrown')errors.push(m.params);else if(m.method==='Runtime.consoleAPICalled' && m.params.type==='error')errors.push(m.params.args.map(a=>a.description||a.value));};
@@ -63,10 +63,13 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
         assert.equal(await evaluate('player.paused'),true);await touch('touchStart',[{...pause,id:3}]);await touch('touchEnd',[]);assert.equal(await evaluate('player.paused'),false);
         console.log('PASS pause/resume touch button');
         // Creator's toolbar can lock its embedded canvas to Design Resolution.
-        // Exercise responsive aspect ratios in the fullscreen web build instead.
+        // Exercise fresh landscape launches. Live viewport resizing is a separate device check.
         const sizes = (process.argv[2] || '').includes(':7456') ? [[1280,720]] : [[1280,720],[1560,720],[960,720]];
         for(const [width,height] of sizes){
             await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});await delay(500);
+            await send('Page.navigate',{url:process.argv[2] || 'http://localhost:7457'});
+            let loaded=false;for(let i=0;i<60;i++){await delay(250);loaded=await evaluate(`typeof cc !== 'undefined' && !!cc.director.getScene()?.getChildByName('Rin')`);if(loaded)break;}assert.ok(loaded);
+            await evaluate(`window.rin=cc.director.getScene().getChildByName('Rin');window.player=rin.getComponent('PlayerController');cc.profiler.hideStats();void 0`);await delay(250);
             const stick=await point('Movement joystick'), button=await point('Pause button');
             assert.ok(stick.x>70 && stick.x<width-70 && stick.y>70 && stick.y<height-70);
             assert.ok(button.x>40 && button.x<width-40 && button.y>20 && button.y<height-20);

@@ -1,5 +1,17 @@
 # Re:ZONBI development checklist
 
+## Current playable — roguelite vertical slice, 2026-10-19
+
+The user's roguelite direction supersedes the five-enemy M2 encounter and planned five-wave upgrade loop. The existing Main.scene now launches continuous Horde Survival: active combat, pooled EXP drops, leveling, three-choice upgrades, six functioning skills, increasing spawn pressure, local hearing/global noise, and a two-phase Signal Tyrant after 120 active seconds. Boss death wins the run; defeat and replay reset all run state.
+
+A complete browser-input playthrough reached level 7, chose six upgrades, defeated 87 enemies including the boss, and won at 155.8 simulation seconds. No health/EXP/timer/damage overrides were used in that playthrough. Separate deterministic runtime fixtures cover edge cases. Art remains procedural blockout; physical Huawei/Android testing is pending.
+
+Current rebuilt RPK after the visual pass: **2,541,705 bytes**, `build/huawei-quick-game/dist/ReZONBI.rpk`. Archived manifest verified: display name **Re:ZONBI**, landscape, unchanged **com.huawei.demo** identifier; launch scene **db://assets/Main.scene**. SHA-256: `8E1A0DD5E78657CE9D3CAD8CF3321720CF068AAC413FAC95E30D652FB867163C`.
+
+Visual pass: circular icon HUD, dimmed skill cards, closer camera, silver-pink twin-tail Rin silhouette and ground ring, differentiated enemies, crystalline boss plates/core, crosswalks/storefront details and camera-aware building cutaways are connected to the existing scene. Faceted EXP and pink knife effects retain the gameplay pools. All five newly supplied visual references are now copied into docs/reference and inspected. The original vector portrait and procedural models are interim art; the full visual overhaul, production character assets, main menu/settings and physical-device verification remain unfinished. See [VISUAL-HANDOFF.md](VISUAL-HANDOFF.md) for changed files, actual rendered screenshots, tests, artist prefab contract and remaining work.
+
+See [ROGUELITE-HANDOFF.md](ROGUELITE-HANDOFF.md) for current systems, six skill effects, executed tests, source build hook, limitations and next tasks. The M1/M2 sections below are historical records.
+
 ## Verified baseline — 2026-10-18
 
 - Project: existing Cocos Creator project, version 3.8.8 in package.json.
@@ -19,9 +31,9 @@
 - [x] M0: Reference inspected, project/engine/entry-scene/dependencies verified, existing Huawei settings preserved, landscape changed in source, and an actual updated RPK generated and measured. The earlier empty-project artifact remains the historical size baseline.
 - [x] M1: Residential arena, replaceable procedural Rin, keyboard/joystick movement, static collision, smooth orthographic camera, and responsive exploration HUD connected through Main.scene. Runtime interactions passed in Cocos Creator Preview and the generated web build. Physical Android/Huawei verification remains outstanding; this checkmark does not certify device readiness.
 - [x] M2: Pistol/knife, collision-aware dodge, player health/death, Walker/Runner AI, safe five-enemy spawning, combat HUD, hit/death effects, victory/defeat and replay implemented. Verified in Creator Preview and the web build; landscape RPK rebuilt at 2,527,328 bytes. Physical Huawei testing remains pending.
-- [ ] M3: Add local hearing, investigation, decaying global noise, capped reinforcements, and noise HUD. Compare quiet and loud encounters.
-- [ ] M4: Complete five-wave Horde flow, upgrades, results, and validated local saves. Play from menu through victory and defeat.
-- [ ] M5: Add the Signal Tyrant with two phases, fair telegraphs, recovery, and boss HUD. Verify both phases and defeat.
+- [x] M3: Local hearing, decaying noise pressure, capped reinforcement cadence and HUD implemented; quiet/loud runtime behavior checked. Physical-device validation pending.
+- [ ] M4: Continuous roguelite Horde loop, EXP, six skills, results and replay implemented and tested, replacing the earlier five-wave plan. Mode menu and validated persistent saves remain unimplemented.
+- [x] M5: Two-phase Signal Tyrant, locked telegraphs, charge, slam, summons, recovery vulnerability and boss HUD implemented; tested through actual boss victory. Physical-device validation pending.
 - [ ] M6: Connect four reusable city areas through the transmitter, ambush, tower, and story completion objectives.
 - [ ] M7: Verify actual Huawei Quick Game API support before implementing a service. Record credential/runtime prerequisites and actual integration results.
 - [ ] M8: Refine art against the concept board, procedural animations, audio, UI, effects, and performance.
@@ -63,8 +75,10 @@ See [M2-HANDOFF.md](M2-HANDOFF.md) for controls, tunable values, file changes, e
 | 2026-10-18 | Initial M1 build | 2,411,548 | Superseded: runtime test exposed a missing shader dependency |
 | 2026-10-18 | Corrected M1 ReZONBI.rpk | 2,516,740 | Creator build/make succeeded; archived manifest says landscape; Huawei runtime test pending |
 | 2026-10-18 | M2 ReZONBI.rpk | 2,527,328 | Creator build/make succeeded; archive launch scene, landscape and combat scripts checked; Huawei runtime test pending |
+| 2026-10-19 | Roguelite ReZONBI.rpk | 2,536,482 | Creator build/make succeeded; archived display name, landscape, entry scene and gameplay scripts checked; Huawei runtime test pending |
+| 2026-10-19 | Visual pass ReZONBI.rpk | 2,541,705 | Creator build/make succeeded; archived name, landscape, entry scene and visual/gameplay scripts checked; Huawei runtime test pending |
 
-Current M2 artifact: `build/huawei-quick-game/dist/ReZONBI.rpk` (2,527,328 bytes; below 20,000,000 bytes). SHA-256: `A3CD6537074F8AEC673992D93B4FC003F4030934FB06333287467B4F947DAC90`.
+Historical M2 artifact measurement: 2,527,328 bytes. SHA-256: `A3CD6537074F8AEC673992D93B4FC003F4030934FB06333287467B4F947DAC90`. It is superseded on disk by the current roguelite artifact above.
 
 Measured M2 archive-entry totals, grouped by actual paths:
 

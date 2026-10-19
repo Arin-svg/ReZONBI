@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'),delay=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{const c=await require('./cdp-client.cjs').connect(),{send,evaluate,errors}=c;let checks=0;
+const check=async(name,body)=>{assert.equal(await evaluate(`(()=>{${body}})()`),true,name);console.log('PASS',name);checks++;};
+try{await send('Runtime.enable');await send('Page.navigate',{url:process.argv[2]||'http://localhost:7457'});
+let ready=false;for(let i=0;i<60;i++){await delay(500);ready=await evaluate(`typeof cc!=='undefined'&&cc.director.getScene()?.getChildByName('Combat Encounter')?.getComponent('CombatEncounter')?.elapsed!==undefined`);if(ready)break;}assert.ok(ready);
+await evaluate(`window.enc=cc.director.getScene().getChildByName('Combat Encounter').getComponent('CombatEncounter');cc.director.pause();enc.restart();void 0`);
+await check('Continuous spawn positions are safe, reachable, capped at 24 nodes',`for(let i=0;i<60;i++)enc.spawner.spawn(90);return enc.spawner.alive===24&&enc.spawner.enemies.length===24&&enc.spawner.enemies.every(e=>!enc.player.obstacles.some(o=>Math.abs(e.position.x-o.x)<o.halfX+.34&&Math.abs(e.position.z-o.z)<o.halfZ+.34))&&enc.spawner.enemies.slice(5).every(e=>Math.hypot(e.position.x,e.position.z-1)>=7);`);
+await check('Recycling retains node cap and grants EXP on each distinct death',`const e=enc.spawner.enemies[8];e.receiveDamage({amount:999,id:enc.nextHit(),source:'Rin',kind:'pistol'});e.tickDeath(1);const count=enc.spawner.enemies.length;enc.spawner.spawn(90);return count===enc.spawner.enemies.length&&enc.spawner.alive===24&&enc.kills===1;`);
+await check('Later phases spawn stronger enemies more frequently',`enc.restart();enc.spawner.tick(4.1,0);const early=enc.spawner.cooldown;enc.spawner.tick(4.1,90);const last=enc.spawner.enemies.find(e=>e.active&&e.stats.hp>(e.kind===\'runner\'?50:80));return early===4&&enc.spawner.cooldown===1.4&&!!last;`);
+await check('Pause and selection stop survival clock and spawning',`enc.restart();enc.togglePause();enc.lateUpdate(.1);const pause=enc.elapsed===0;enc.togglePause();enc.progression.addXP(20);enc.openSelection();enc.lateUpdate(.1);return pause&&enc.elapsed===0&&enc.spawner.alive===5;`);
+await check('Defeat and restart clear run state and pooled enemies',`enc.restart();enc.progression.levels.bullet=4;enc.elapsed=85;enc.health.receiveDamage({amount:999,id:enc.nextHit(),source:'test',kind:'melee'});const defeat=enc.state==='defeat'&&!enc.combat.shoot();enc.restart();return defeat&&enc.state==='playing'&&enc.elapsed===0&&enc.kills===0&&enc.health.state.current===400&&enc.spawner.alive===5&&enc.progression.rank('bullet')===0;`);
+await evaluate('enc.restart();cc.director.resume();void 0');assert.equal(errors.length,0,JSON.stringify(errors));console.log(`${checks} survival checks passed`);
+}finally{c.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
+

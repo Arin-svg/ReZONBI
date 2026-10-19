@@ -1,23 +1,55 @@
 import { Node } from 'cc';
-import { CombatConfig as C } from '../core/GameConfig';
-import { overlaps } from '../core/MovementMath';
+import { CombatConfig as C, SurvivalConfig as S } from '../core/GameConfig';
+import { overlaps, PointXZ } from '../core/MovementMath';
 import { GeometryFactory } from '../levels/GeometryFactory';
 import { distance } from '../systems/CombatMath';
 import { ZombieBase, ZombieContext, ZombieKind } from './ZombieBase';
 
+/** Bounded reusable population. A dying node finishes its animation before reuse. */
 export class ZombieSpawner {
     readonly enemies: ZombieBase[] = [];
-    constructor(parent: Node, geometry: GeometryFactory, context: ZombieContext) {
-        const positions: [ZombieKind, number, number][] = [
-            ['walker', -6, 2], ['walker', 0, -7], ['walker', 6, -2], ['runner', -3, 7], ['runner', 4, -7],
-        ];
-        for (const [kind, x, z] of positions.slice(0, C.maxEnemies)) {
-            const p = { x, z };
-            if (distance(p, context.player.position) < 4 || context.obstacles.some(o => overlaps(p, C.enemyRadius, o))) throw new Error(`Unsafe zombie spawn: ${x}, ${z}`);
-            const node = new Node(`${kind === 'runner' ? 'Runner' : 'Walker'} ${this.enemies.length + 1}`); parent.addChild(node);
-            const enemy = node.addComponent(ZombieBase); enemy.initialize(kind, p, context, geometry); this.enemies.push(enemy);
-        }
+    private candidates: PointXZ[] = [];
+    private cooldown = 4;
+    constructor(private parent: Node, private geometry: GeometryFactory, private context: ZombieContext) {
+        for (let x = -16; x <= 16; x += 2) for (let z = -16; z <= 16; z += 2)
+            if (!context.obstacles.some(o => overlaps({ x, z }, C.enemyRadius + .15, o))) this.candidates.push({ x, z });
+        this.reset();
     }
-    get alive(): number { return this.enemies.filter(e => !e.dead).length; }
-    reset(): void { this.enemies.forEach(e => e.reset()); }
+    get alive(): number { return this.enemies.filter(e => e.active && !e.dead).length; }
+    private create(kind: ZombieKind, p: PointXZ, strength = 1): ZombieBase | null {
+        if (this.alive >= S.maxEnemies) return null;
+        let enemy = this.enemies.find(e => !e.node.active && e.kind === kind);
+        if (!enemy && this.enemies.length < S.maxEnemies) {
+            const node = new Node(`${kind} ${this.enemies.length + 1}`); this.parent.addChild(node);
+            enemy = node.addComponent(ZombieBase); enemy.initialize(kind, p, this.context, this.geometry); this.enemies.push(enemy);
+        }
+        // Preserve the node budget even when the available pool has a different mix.
+        if (!enemy) enemy = this.enemies.find(e => !e.node.active);
+        if (!enemy) return null;
+        enemy.reset(p, strength); enemy.investigate(this.context.player.position); return enemy;
+    }
+    spawn(elapsed: number, random: () => number = Math.random): ZombieBase | null {
+        if (this.alive >= S.maxEnemies) return null;
+        const phase = Math.min(4, Math.floor(elapsed / S.phaseSeconds));
+        const start = Math.floor(random() * this.candidates.length);
+        for (let i = 0; i < this.candidates.length; i++) {
+            const p = this.candidates[(start + i) % this.candidates.length], d = distance(p, this.context.player.position);
+            if (d < S.minSpawnDistance || d > S.maxSpawnDistance || this.enemies.some(e => e.active && !e.dead && distance(e.position, p) < 1.2)) continue;
+            if (!this.context.navigation.path(p, this.context.player.position).length) continue;
+            return this.create(random() < S.runnerChances[phase] ? 'runner' : 'walker', p, 1 + phase * .15);
+        }
+        return null;
+    }
+    tick(dt: number, elapsed: number, pressure = 0): void {
+        this.cooldown -= dt;
+        if (this.cooldown > 0) return;
+        const phase = Math.min(4, Math.floor(elapsed / S.phaseSeconds));
+        this.cooldown = S.spawnIntervals[phase] * (pressure >= 60 ? .65 : 1);
+        this.spawn(elapsed);
+    }
+    reset(): void {
+        this.enemies.forEach(e => e.node.active = false); this.cooldown = S.spawnIntervals[0];
+        const initial: [ZombieKind, number, number][] = [['walker', -6, 2], ['walker', 0, -7], ['walker', 6, -2], ['runner', -3, 7], ['walker', 4, -7]];
+        for (const [kind, x, z] of initial) this.create(kind, { x, z });
+    }
 }

@@ -1,4 +1,4 @@
-export interface DamageHit { amount: number; id: number; source: string; kind: 'pistol' | 'knife' | 'melee'; }
+export interface DamageHit { amount: number; id: number; source: string; kind: 'pistol' | 'knife' | 'melee' | 'skill'; }
 export interface Damageable { receiveDamage(hit: DamageHit): boolean; }
 
 /** Shared bounded health state. Simulation time, never wall-clock time. */
@@ -21,4 +21,8 @@ export class HealthState {
         return true;
     }
     reset(): void { this.current = this.maximum; this.protection = this.invulnerability = 0; this.recent.length = 0; }
+    heal(amount: number): number {
+        if (this.dead || !Number.isFinite(amount) || amount <= 0) return 0;
+        const before = this.current; this.current = Math.min(this.maximum, this.current + amount); return this.current - before;
+    }
 }
