@@ -2,7 +2,7 @@
 export const GameConfig = {
     speed: 5, acceleration: 32, deceleration: 38, turnSpeed: 18,
     playerRadius: 0.32, arenaHalfSize: 18, maxStep: 1 / 120,
-    cameraHeight: 17, cameraOffset: 14, orthoHeight: 8, cameraDamping: 9,
+    cameraHeight: 17, cameraOffset: 14, orthoHeight: 7.4, cameraDamping: 9,
     joystickRadius: 68, joystickDeadZone: 0.14,
 };
 
