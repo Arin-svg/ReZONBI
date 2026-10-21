@@ -2,9 +2,9 @@
 
 ## Current playable — roguelite vertical slice, 2026-10-19
 
-The user's roguelite direction supersedes the five-enemy M2 encounter and planned five-wave upgrade loop. The existing Main.scene now launches continuous Horde Survival: active combat, pooled EXP drops, leveling, three-choice upgrades, six functioning skills, increasing spawn pressure, local hearing/global noise, and a two-phase Signal Tyrant after 120 active seconds. Boss death wins the run; defeat and replay reset all run state.
+The user's roguelite direction supersedes the five-enemy M2 encounter and planned five-wave upgrade loop. The existing Main.scene now launches endless Horde Survival: active combat, pooled EXP drops, leveling, three-choice upgrades, six functioning skills, increasing spawn pressure, local hearing/global noise, and a two-phase Signal Tyrant after 120 active seconds. Defeating the boss does not end the run; only Rin's death ends it, and replay resets all run state.
 
-A complete browser-input playthrough reached level 7, chose six upgrades, defeated 87 enemies including the boss, and won at 155.8 simulation seconds. No health/EXP/timer/damage overrides were used in that playthrough. Separate deterministic runtime fixtures cover edge cases. Art remains procedural blockout; physical Huawei/Android testing is pending.
+A complete browser-input playthrough reached level 7, chose six upgrades, defeated the Signal Tyrant, and continued surviving the horde afterward. No health/EXP/timer/damage overrides were used in that playthrough. Separate deterministic runtime fixtures cover edge cases. Art remains procedural blockout; physical Huawei/Android testing is pending.
 
 Current rebuilt RPK after the visual pass: **2,541,705 bytes**, `build/huawei-quick-game/dist/ReZONBI.rpk`. Archived manifest verified: display name **Re:ZONBI**, landscape, unchanged **com.huawei.demo** identifier; launch scene **db://assets/Main.scene**. SHA-256: `8E1A0DD5E78657CE9D3CAD8CF3321720CF068AAC413FAC95E30D652FB867163C`.
 

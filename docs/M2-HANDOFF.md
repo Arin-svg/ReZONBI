@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented and verified in Cocos Creator 3.8.8 browser Preview and a generated web build. M2 is a five-enemy combat encounter, not Horde Survival or Story Mode. Physical Android/Huawei Quick Game execution and device performance remain unverified.
+M2 combat systems are integrated into the Horde Survival encounter, not a standalone five-enemy mode or Story Mode. Physical Android/Huawei Quick Game execution and device performance remain unverified.
 
 The existing project, Main.scene UUID, M1 arena, camera, joystick, Huawei identity and signing settings are preserved. No Git commit, push, reset, clean or staging operation was performed by the agent. Existing staged user work remains staged; M2 changes remain in the working tree.
 
@@ -15,9 +15,9 @@ The existing project, Main.scene UUID, M1 arena, camera, joystick, Huawei identi
 | Knife | K | Tap KNIFE |
 | Dodge | Space | Tap DODGE |
 | Pause / resume | Escape | PAUSE / RESUME |
-| Restart after victory or death | Click RESTART ENCOUNTER | Tap RESTART ENCOUNTER |
+| Restart after death | Click RESTART ENCOUNTER | Tap RESTART ENCOUNTER |
 
-Launch `assets/Main.scene`: Rin and three Walkers/two Runners spawn. Defeat all five to show **AREA CLEARED**, or lose all health to show **RIN HAS FALLEN**. Restart reuses the encounter and resets health, movement, AI, enemies, cooldowns, effects, held inputs and pause state. A short controls guide appears for the first 14 active seconds of the session.
+Launch `assets/Main.scene` for continuous Horde Survival. Rin starts with four Walkers and one Runner. The Signal Tyrant appears after 120 active seconds; defeating it resumes the horde instead of ending the run. Only Rin's death shows **RIN HAS FALLEN**. Restart reuses the encounter and resets health, movement, AI, enemies, cooldowns, effects, held inputs and pause state. A short controls guide appears for the first 14 active seconds of the session.
 
 Mouse clicks on UI controls do not also shoot into the world. Each combat button owns its initiating touch ID. Releasing either movement or pistol leaves the other finger's action intact. Touch cancellation clears the corresponding action. Application hide pauses the encounter and clears inputs.
 
@@ -93,7 +93,7 @@ Component-level runtime checks use deterministic actor positions and simulation 
 
 End-to-end runs use real browser input: hold J to defeat all five default enemies; replay; allow all five to attack a full-health 400 HP Rin until defeat; restart through the result UI. Touch tests cover movement plus hold-fire, releasing either finger independently, knife/dodge buttons and cancellation. Extra checks cover LMB hold/release, UI click isolation, K/Space, and Escape key-repeat handling.
 
-The web build checks 1280×720, 1560×720 and 960×720 HUD bounds. Creator Preview checks its default canvas size because its toolbar can lock Design Resolution. Screenshots were inspected and saved under ignored `temp/`: `m2-combat.png`, `m2-victory.png`, `m2-defeat.png`.
+The web build checks 1280×720, 1560×720 and 960×720 HUD bounds. Creator Preview checks its default canvas size because its toolbar can lock Design Resolution. Screenshots were inspected and saved under ignored `temp/`: `m2-combat.png`, `m2-survival.png`, `m2-defeat.png`.
 
 Reproduce:
 

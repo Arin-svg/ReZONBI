@@ -16,7 +16,7 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
   assert.ok(ready,'M2 bootstrap loads');
   await evaluate(`window.scene=cc.director.getScene();window.enc=scene.getChildByName('Combat Encounter').getComponent('CombatEncounter');window.rin=enc.player.node;window.enemies=enc.spawner.enemies;window.safe=scene.getChildByName('Mobile Canvas').getChildByName('Safe area');cc.profiler.hideStats();cc.director.pause();
    window.fixture=()=>{enc.restart();rin.setPosition(0,.06,1);rin.setRotationFromEuler(0,0,0);enemies.forEach((e,i)=>e.node.setPosition(-2+i,.06,16));};void 0;`);
-  await check('Three Walkers and two Runners spawn safely',`(()=>{enc.restart();return enemies.length===5&&enemies.filter(e=>e.kind==='walker').length===3&&enemies.filter(e=>e.kind==='runner').length===2&&enemies.every(e=>e.active&&!e.dead&&Math.hypot(e.position.x,e.position.z-1)>=4);})()`);
+  await check('Four Walkers and one Runner spawn safely',`(()=>{enc.restart();return enemies.length===5&&enemies.filter(e=>e.kind==='walker').length===4&&enemies.filter(e=>e.kind==='runner').length===1&&enemies.every(e=>e.active&&!e.dead&&Math.hypot(e.position.x,e.position.z-1)>=4);})()`);
   await check('Actual pistol selects nearest target, damages once, obeys cooldown',`(()=>{fixture();enemies[0].node.setPosition(0,.06,-3);enemies[1].node.setPosition(0,.06,4);const first=enc.combat.shoot(),second=enc.combat.shoot();const hp=enemies[1].health.current;enc.combat.tick(.24);const early=enc.combat.shoot();enc.combat.tick(.011);const later=enc.combat.shoot();return first&&!second&&!early&&later&&hp===56&&enemies[1].health.current===32&&enemies[0].health.current===80;})()`);
   await check('Pistol cannot damage through residential barricade',`(()=>{fixture();rin.setPosition(2,.06,-4);enemies[0].node.setPosition(2,.06,-8);enc.combat.shoot();return enemies[0].health.current===80;})()`);
   await check('Actual knife reaches farther, widens its arc and keeps its rear guard',`(()=>{fixture();enemies[0].node.setPosition(0,.06,-.8);enemies[1].node.setPosition(0,.06,2.8);enemies[2].node.setPosition(2.9,.06,.1);enemies[3].node.setPosition(0,.06,-1.3);enemies[4].node.setPosition(0,.06,-2.8);const first=enc.combat.knife(),second=enc.combat.knife();enc.effects.tick(.08);const trail=enc.node.getChildByName('Combat Effects').children.filter(n=>n.name==='Knife slash ribbon'&&n.active);const pos=trail[0]?.position.clone();enc.effects.tick(.06);const animated=trail[0]&&!trail[0].position.equals(pos);return first&&!second&&enemies[0].health.current===40&&enemies[1].health.current===80&&enemies[2].health.current===80&&enemies[3].health.current===40&&enemies[4].health.current===40&&trail.length>0&&animated;})()`);
@@ -48,14 +48,12 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
   await check('Dodge touch button activates movement and cooldown',`enc.combat.dodgeCooldown>2.5`);
   await key('keyDown','Escape','Escape',27);await key('keyUp','Escape','Escape',27);await check('Escape pauses the encounter',`enc.paused&&enc.player.paused`);
   const pause=await point('Pause button');await touch('touchStart',[{...pause,id:5}]);await touch('touchEnd',[]);await check('Pause HUD resumes the encounter',`!enc.paused&&!enc.player.paused`);
-  // Real beginning-to-victory run: default HP/enemies, no direct damage calls.
+  // Real beginning-to-survival run: default HP/enemies, no direct damage calls.
   await evaluate('enc.restart();void 0');await key('keyDown','j','KeyJ',74);
-  let won=false;for(let i=0;i<50;i++){await delay(250);won=await evaluate(`enc.state==='victory'`);if(won)break;}
-  await key('keyUp','j','KeyJ',74);assert.ok(won,'Holding J can defeat all five default enemies');checks++;console.log('PASS full five-enemy victory through real J input');
-  await check('Victory screen shows AREA CLEARED',`safe.getChildByName('Encounter result').active&&safe.getChildByName('Encounter result').getChildByName('Result title').getComponentInChildren(cc.Label).string.includes('AREA CLEARED')`);
-  let shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync('temp/m2-victory.png',Buffer.from(shot.data,'base64'));
-  const replay=await point('Replay button');await touch('touchStart',[{...replay,id:6}]);await touch('touchEnd',[]);
-  await check('Replay UI resets all five enemies, health and combat',`enc.state==='playing'&&enc.spawner.alive===5&&enc.health.state.current===400&&enc.combat.shotsFired===0`);
+  let survived=false;for(let i=0;i<50;i++){await delay(250);survived=await evaluate(`enc.kills>=5&&enc.state==='playing'`);if(survived)break;}
+  await key('keyUp','j','KeyJ',74);assert.ok(survived,'Holding J can defeat the initial horde without ending survival');checks++;console.log('PASS initial horde defeated while survival continues');
+  await check('Boss-free survival has no result overlay',`!safe.getChildByName('Encounter result').active&&enc.player.joystick.enabled`);
+  let shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync('temp/m2-survival.png',Buffer.from(shot.data,'base64'));
   // Real defeat run: let the default five enemies attack the full 400 HP player.
   let lost=false;for(let i=0;i<160;i++){await delay(250);lost=await evaluate(`enc.state==='defeat'`);if(lost)break;}
   assert.ok(lost,'Default enemies can defeat the player');checks++;console.log('PASS full-health defeat from real enemy attacks');

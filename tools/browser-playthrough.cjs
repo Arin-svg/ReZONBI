@@ -8,10 +8,12 @@ await send('Runtime.enable');errors.length=0;await send('Emulation.setTouchEmula
 let ready=false;for(let i=0;i<60;i++){await delay(500);ready=await evaluate(`typeof cc!=='undefined'&&!!cc.director.getScene()?.getChildByName('Combat Encounter')?.getComponent('CombatEncounter')?.boss`);if(ready)break;}assert.ok(ready,'Cocos combat scene finishes loading');
 await evaluate(`window.enc=cc.director.getScene().getChildByName('Combat Encounter').getComponent('CombatEncounter');enc.restart();cc.profiler.hideStats();cc.director.resume();window.routeIndex=0;void 0`);
 await send('Input.dispatchMouseEvent',{type:'mousePressed',x:640,y:360,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:640,y:360,button:'left',clickCount:1});
-let lastLog=-1,selected=0,result;
+let lastLog=-1,selected=0,result,bossDeathTime=-1,bossDeathKills=0;
 for(let i=0;i<1000;i++){
 const s=await evaluate(`(()=>{const p=enc.player.node.position;return {state:enc.state,time:enc.elapsed,hp:enc.health.state.current,level:enc.progression.level,kills:enc.kills,selecting:enc.selecting,boss:enc.bossSpawned?enc.boss.health.current:null};})()`);
 if(Math.floor(s.time/15)>lastLog){lastLog=Math.floor(s.time/15);console.log('RUN',JSON.stringify(s));}
+if(s.boss===0&&bossDeathTime<0){bossDeathTime=s.time;bossDeathKills=s.kills;console.log('BOSS DEFEATED',JSON.stringify(s));}
+if(bossDeathTime>=0&&s.time>=bossDeathTime+10&&s.state==='playing'){result=s;break;}
 if(s.state!=='playing'){result=s;break;}
 if(s.selecting){
  await set([]);
@@ -28,5 +30,5 @@ return {keys,knife:enc.targets().some(e=>e.active&&!e.dead&&d(e.position)<2.2),d
 await set(action.keys);if(action.knife){await key('keyDown','K');await key('keyUp','K');}if(action.dodge){await key('keyDown','Space');await key('keyUp','Space');}await delay(250);
 }
 await set([]);console.log('RESULT',JSON.stringify({result,selected}));fs.writeFileSync('temp/roguelite-playthrough.png',Buffer.from((await send('Page.captureScreenshot',{format:'png'})).data,'base64'));
-assert.ok(result,'Run finishes within test deadline');assert.equal(result.state,'victory');assert.ok(selected>0&&result.level>1&&result.kills>5);assert.equal(errors.length,0,JSON.stringify(errors));console.log('PASS complete input-driven roguelite victory');
+assert.ok(result,'Run survives beyond boss defeat within test deadline');assert.equal(result.state,'playing');assert.ok(bossDeathTime>=120&&result.time>=bossDeathTime+10&&result.kills>bossDeathKills);assert.ok(selected>0&&result.level>1&&result.kills>5);assert.equal(errors.length,0,JSON.stringify(errors));console.log('PASS complete input-driven roguelite survival continues after boss defeat');
 }finally{await set([]);c.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

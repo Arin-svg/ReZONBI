@@ -33,7 +33,7 @@ import { DamageNumbers } from '../ui/DamageNumbers';
 const { ccclass } = _decorator;
 
 export type EncounterState =
-    'playing' | 'victory' | 'defeat';
+    'playing' | 'defeat';
 
 @ccclass('CombatEncounter')
 export class CombatEncounter extends Component {
@@ -557,7 +557,8 @@ export class CombatEncounter extends Component {
 
                 if (
                     !this.bossSpawned ||
-                    this.noise.pressure >= 60
+                    this.noise.pressure >= 60 ||
+                    this.boss.dead
                 ) {
                     this.spawner.tick(
                         dt,
@@ -618,35 +619,6 @@ export class CombatEncounter extends Component {
                     this.progression.pending
                 ) {
                     this.openSelection();
-                }
-
-                if (
-                    !this.health.dead &&
-                    this.bossSpawned &&
-                    this.boss.dead
-                ) {
-
-                    this.selecting = false;
-
-                    this.selection.refresh(false);
-
-                    this.state = 'victory';
-
-                    this.player.clearInput();
-                    this.combat.clearInput();
-
-                    this.player.paused = true;
-
-                    if (this.player.joystick) {
-                        this.player.joystick.enabled = false;
-                    }
-
-                    this.player.visual?.play(
-                        'victory',
-                        3600
-                    );
-
-                    this.player.visual?.animate(0, 0);
                 }
 
             } else {

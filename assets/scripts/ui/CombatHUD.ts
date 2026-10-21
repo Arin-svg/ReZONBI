@@ -108,7 +108,7 @@ export class CombatHUD {
             this.lastNoise = Math.round(e.noise.pressure); this.noiseFill.clear(); this.noiseFill.fillColor = new Color(230, 75, 127);
             this.noiseFill.rect(-80, -2, 160 * e.noise.pressure / 100, 4); this.noiseFill.fill();
         }
-        this.bossText.node.parent!.active = e.bossSpawned;
+        this.bossText.node.parent!.active = e.bossSpawned && !e.boss.dead;
         if (e.bossSpawned) text(this.bossText, `SIGNAL TYRANT  /  PHASE ${e.boss.phase}\n${Math.ceil(e.boss.health.current)} / ${e.boss.health.maximum} HP${e.boss.stage === 'recovery' ? '  EXPOSED!' : ''}`);
         if (e.bossSpawned && this.lastBoss !== e.boss.health.current) {
             this.lastBoss = e.boss.health.current; this.bossFill.clear(); this.bossFill.fillColor = new Color(255, 66, 126);
@@ -129,7 +129,7 @@ export class CombatHUD {
         text(this.dodge, e.combat.dodgeCooldown > 0 ? `${e.combat.dodgeCooldown.toFixed(1)}s` : 'SPACE');
         this.pistol.color = e.combat.firing ? new Color(213, 106, 145) : new Color(232, 226, 226);
         text(this.pause, ''); if (e.paused !== this.lastPaused) { this.lastPaused = e.paused; this.pauseIcon.destroy(); this.pauseIcon = icon(this.pause.node.parent!, e.paused ? 'play' : 'pause', 30); } this.pausedHint.active = e.paused;
-        this.result.active = e.state !== 'playing'; text(this.resultTitle, e.state === 'victory' ? `STAGE CLEARED\n${e.kills} infected defeated` : `RIN HAS FALLEN\nLevel ${e.progression.level} / ${e.kills} kills`);
+        this.result.active = e.state === 'defeat'; text(this.resultTitle, `RIN HAS FALLEN\nLevel ${e.progression.level} / ${e.kills} kills`);
         if (!e.paused && !e.selecting && e.state === 'playing') this.guideTime -= dt;
         this.guide.active = this.guideTime > 0 && e.state === 'playing' && !e.paused && !e.selecting;
     }
