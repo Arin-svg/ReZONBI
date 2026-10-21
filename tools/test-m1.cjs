@@ -44,8 +44,10 @@ check('Scene references are valid and bootstrap UUID resolves', () => {
     const scene=JSON.parse(fs.readFileSync('assets/Main.scene'));
     const visit=o=>{if(!o||typeof o!=='object')return;if('__id__'in o)assert.ok(scene[o.__id__]);Object.values(o).forEach(visit);};
     scene.forEach(visit);
-    const component=scene[scene[1]._components[0].__id__];
-    assert.equal(component.node.__id__,1); assert.equal(component._enabled,true);
+    const managerIndex=scene.findIndex(n=>n.__type__==='cc.Node'&&n._name==='GameManager');
+    const component=scene[scene[managerIndex]._components[0].__id__];
+    assert.equal(component.node.__id__,managerIndex); assert.equal(component._enabled,true);
+    assert.equal(scene.filter(c=>c.__type__===component.__type__&&c._enabled).length,1);
     const hex=JSON.parse(fs.readFileSync('assets/scripts/core/GameBootstrap.ts.meta')).uuid.replace(/-/g,'');
     const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'; let id=hex.slice(0,5);
     for(let i=5;i<32;i+=3){const n=parseInt(hex.slice(i,i+3),16);id+=chars[n>>6]+chars[n&63];}

@@ -138,6 +138,18 @@
       "__uuid__": "e3fc5fbd-a319-42db-ab2a-71609dc26cbf@6c48a",
       "__expectedType__": "cc.Texture2D"
     },
+    "rinRunFrontAtlas": {
+      "__uuid__": "599c5bae-9a63-4765-8c8f-dc9e40be1bf0@6c48a",
+      "__expectedType__": "cc.Texture2D"
+    },
+    "rinRunBackAtlas": {
+      "__uuid__": "09519157-51dc-4ca9-baf8-c12375c1f496@6c48a",
+      "__expectedType__": "cc.Texture2D"
+    },
+    "rinRunLeftAtlas": {
+      "__uuid__": "d387cb11-a0d1-49cf-b60d-5f09a083fab8@6c48a",
+      "__expectedType__": "cc.Texture2D"
+    },
     "infectedAtlas": {
       "__uuid__": "f5635905-f4fc-4f1d-b3a9-ad10ff908573@6c48a",
       "__expectedType__": "cc.Texture2D"
@@ -343,7 +355,7 @@
     "node": {
       "__id__": 1
     },
-    "_enabled": true,
+    "_enabled": false,
     "__prefab": null,
     "surfaceEffect": {
       "__uuid__": "c8f66d17-351a-48da-a12c-0212d28575c4",
@@ -359,6 +371,9 @@
       "__expectedType__": "cc.Texture2D"
     },
     "rinRunRightAtlas": null,
+    "rinRunFrontAtlas": null,
+    "rinRunBackAtlas": null,
+    "rinRunLeftAtlas": null,
     "infectedAtlas": {
       "__uuid__": "f5635905-f4fc-4f1d-b3a9-ad10ff908573@6c48a",
       "__expectedType__": "cc.Texture2D"

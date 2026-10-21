@@ -12,68 +12,75 @@ import {
     Vec4,
 } from 'cc';
 
-import { CharacterAction, CharacterVisual } from './CharacterVisual';
+import {
+    CharacterAction,
+    CharacterVisual,
+} from './CharacterVisual';
+import { SpriteConfig } from '../core/GameConfig';
+
+// Alpha >= 0.45 bounds measured by tools/audit-sprite-art.cjs.
+// One reference height per clip/direction preserves pose compression; never stretch each pose to full height.
+const RUN_HEIGHT = [320, 318, 300, 381];
+const RUN_FEET = [[352,368,384,369,352,369,384,368], [351,367,384,369,351,368,384,368],
+    [357,369,381,369,357,370,381,368], [393,389,389,393,382,385,391,391]];
+const RIN_HEIGHT = [304,303,295,289];
+const RIN_FEET = [[318,318,319,319],[305,305,306,305],[297,296,297,293],[295,295,295,295]];
+const ACTION_HEIGHT = [292,284,263,258];
+const ACTION_FEET = [[305,299,301,299,300],[284,284,278,284,280],[263,263,254,262,255],[258,255,254,258,254]];
+const ENEMY_HEIGHT = [[300,293,285,288],[279,290,264,274]];
+const ENEMY_FEET = [[312,312,316,313],[298,298,295,305],[285,284,288,278],[290,289,287,283]];
 
 /**
  * Re:ZONBI - World Sprite Visual
  *
- * Renders 2D anime character sprites in the existing 3D world.
+ * Rin:
+ * - 4-direction running
+ * - 8 frames per running direction
+ * - Idle and combat actions
+ * - Camera-facing billboard
+ * - One immutable quad; builtin-unlit atlas UV uniform
  *
- * Features:
- * - Camera-facing world-space sprite
- * - Four directional views
- * - Idle and running animation
- * - Smooth idle/run transitions
- * - Rin action sprites
- * - Ground-anchored character visuals
- * - Compatible with existing gameplay and collisions
- *
- * Locomotion atlas:
- * Rows: front / back / left / right
- * Columns: idle0 / idle1 / run0 / run1
- *
- * Action atlas:
- * Rows: front / back / left / right
- * Columns: shoot / slash / dodge / hurt / die
+ * Zombies:
+ * - Existing atlas animation preserved
  */
 export class WorldSpriteVisual implements CharacterVisual {
 
     readonly root: Node;
     readonly material: Material;
+
     readonly mesh: Mesh;
 
     frame = -1;
     direction = 0;
     state = 'idle';
 
-    private age = 0;
+    private readonly renderer: MeshRenderer;
 
-    // Prevents rapid idle/run switching near zero speed.
+    private readonly forward = new Vec3();
+
+    private readonly uv = new Vec4(1, 1, 0, 0);
+
+    private readonly normalColor =
+        new Color(255, 255, 255, 255);
+
+    private readonly hurtColor =
+        new Color(255, 140, 170, 255);
+
+    private readonly size: number;
+    private readonly runAtlases: readonly (Texture2D | null)[];
+    private readonly offset = new Vec3();
+    private width = 1;
+    private height = 1;
+    private footPadding = 0;
+
+    private age = 0;
     private running = false;
 
     private actionTime = 0;
-    private action = '';
+    private action: CharacterAction | '' = '';
     private terminal = false;
+
     private textureKey = '';
-
-    // Visual animation settings.
-    private readonly runStartThreshold = 0.12;
-    private readonly runStopThreshold = 0.04;
-
-    // Two-frame animation rates.
-    private readonly idleFPS = 2;
-    private readonly runFPS = 6;
-    private readonly enemyFPS = 5;
-
-    // Subtle movement effect for Rin.
-    private readonly runBobAmount = 0.025;
-    private readonly runBobFrequency = 12;
-
-    private readonly forward = new Vec3();
-    private readonly uv = new Vec4(0.25, 0.25, 0, 0);
-
-    private readonly normalColor = new Color(255, 255, 255, 255);
-    private readonly hurtColor = new Color(255, 140, 170, 255);
 
     constructor(
         private actor: Node,
@@ -83,6 +90,9 @@ export class WorldSpriteVisual implements CharacterVisual {
         private kind: 'rin' | 'walker' | 'runner' | 'boss' = 'rin',
         private actions: Texture2D | null = null,
         private runRightAtlas: Texture2D | null = null,
+        private runFrontAtlas: Texture2D | null = null,
+        private runBackAtlas: Texture2D | null = null,
+        private runLeftAtlas: Texture2D | null = null,
     ) {
 
         const nodeName =
@@ -95,39 +105,16 @@ export class WorldSpriteVisual implements CharacterVisual {
         this.root = new Node(nodeName);
         this.actor.addChild(this.root);
 
-        // Rin is 25% larger than the original 2.3-unit sprite.
-        // This does not change gameplay collisions.
-        const size =
-            kind === 'boss' ? 4.2 :
-                kind === 'rin' ? 2.875 :
-                    kind === 'runner' ? 2.1 :
-                        2.3;
+        // World-space character height
+        this.size =
+            kind === 'boss' ? SpriteConfig.bossHeight :
+            kind === 'runner' ? SpriteConfig.runnerHeight : SpriteConfig.characterHeight;
+        this.runAtlases = [runFrontAtlas, runBackAtlas, runLeftAtlas, runRightAtlas];
 
-        // Bottom-center origin keeps the feet near the actor.
-        this.mesh = utils.createMesh({
-            positions: [
-                -size / 2, -0.04, 0,
-                size / 2, -0.04, 0,
-                -size / 2, size - 0.04, 0,
-                size / 2, size - 0.04, 0,
-            ],
-
-            normals: [
-                0, 0, 1,
-                0, 0, 1,
-                0, 0, 1,
-                0, 0, 1,
-            ],
-
-            uvs: [
-                0, 1,
-                1, 1,
-                0, 0,
-                1, 0,
-            ],
-
-            indices: [0, 1, 2, 2, 1, 3],
-        });
+        // Initial full-texture quad
+        this.mesh = this.createQuad(
+            0, 0, 1, 1,
+        );
 
         this.material = new Material();
 
@@ -140,21 +127,86 @@ export class WorldSpriteVisual implements CharacterVisual {
             },
         });
 
-        this.material.setProperty('mainTexture', texture);
-        this.material.setProperty('alphaThreshold', 0.45);
-        this.material.setProperty('mainColor', this.normalColor);
+        this.material.setProperty(
+            'mainTexture',
+            texture,
+        );
 
-        const renderer = this.root.addComponent(MeshRenderer);
-        renderer.mesh = this.mesh;
-        renderer.setSharedMaterial(this.material, 0);
+        this.material.setProperty(
+            'alphaThreshold',
+            0.45,
+        );
+
+        this.material.setProperty(
+            'mainColor',
+            this.normalColor,
+        );
+
+        // builtin-unlit-vs applies a_texCoord * tilingOffset.xy + tilingOffset.zw.
+        this.material.setProperty('tilingOffset', this.uv);
+
+        this.renderer =
+            this.root.addComponent(MeshRenderer);
+
+        this.renderer.mesh = this.mesh;
+
+        this.renderer.setSharedMaterial(
+            this.material,
+            0,
+        );
 
         this.animate(0, 0);
     }
 
     /**
-     * Play a combat or character action.
+     * Create a billboard quad with explicit UV coordinates.
+     *
+     * left/right/top/bottom are normalized atlas coordinates.
      */
-    play(action: CharacterAction, duration: number): void {
+    private createQuad(
+        left: number,
+        top: number,
+        right: number,
+        bottom: number,
+    ): Mesh {
+
+        const half = 0.5;
+        const height = 1;
+
+        return utils.createMesh({
+            positions: [
+                -half, 0, 0,
+                 half, 0, 0,
+                -half, height, 0,
+                 half, height, 0,
+            ],
+
+            normals: [
+                0, 0, 1,
+                0, 0, 1,
+                0, 0, 1,
+                0, 0, 1,
+            ],
+
+            // Preserve the original atlas V orientation.
+            uvs: [
+                left,  bottom,
+                right, bottom,
+                left,  top,
+                right, top,
+            ],
+
+            indices: [
+                0, 1, 2,
+                2, 1, 3,
+            ],
+        });
+    }
+
+    play(
+        action: CharacterAction,
+        duration: number,
+    ): void {
 
         if (this.terminal) {
             return;
@@ -163,14 +215,14 @@ export class WorldSpriteVisual implements CharacterVisual {
         this.action = action;
         this.actionTime = duration;
 
-        if (action === 'die' || action === 'victory') {
+        if (
+            action === 'die' ||
+            action === 'victory'
+        ) {
             this.terminal = true;
         }
     }
 
-    /**
-     * Reset the character's animation state.
-     */
     reset(): void {
 
         this.action = '';
@@ -189,13 +241,10 @@ export class WorldSpriteVisual implements CharacterVisual {
         this.animate(0, 0);
     }
 
-    /**
-     * Update the sprite every frame.
-     *
-     * @param dt Delta time in seconds
-     * @param moving Existing movement magnitude supplied by gameplay
-     */
-    animate(dt: number, moving: number): void {
+    animate(
+        dt: number,
+        moving: number,
+    ): void {
 
         const delta = Math.max(0, dt);
 
@@ -206,48 +255,45 @@ export class WorldSpriteVisual implements CharacterVisual {
             this.actionTime - delta,
         );
 
-        // ---------------------------------------------
-        // 1. Smooth idle/run state switching
-        // ---------------------------------------------
-
+        // 1. Movement state with hysteresis
         if (this.running) {
 
-            if (moving < this.runStopThreshold) {
+            if (moving < 0.04) {
                 this.running = false;
             }
 
-        } else {
+        } else if (moving > 0.12) {
 
-            if (moving > this.runStartThreshold) {
-                this.running = true;
-            }
+            this.running = true;
         }
 
-        // ---------------------------------------------
-        // 2. Calculate directional facing
-        // ---------------------------------------------
-
+        // 2. Calculate facing direction
         Vec3.transformQuat(
             this.forward,
-            new Vec3(0, 0, -1),
+            Vec3.FORWARD,
             this.actor.worldRotation,
         );
 
         const screenX =
-            (this.forward.x - this.forward.z) * Math.SQRT1_2;
+            (this.forward.x - this.forward.z) *
+            Math.SQRT1_2;
 
         const screenY =
-            (-this.forward.x - this.forward.z) * Math.SQRT1_2;
+            (-this.forward.x - this.forward.z) *
+            Math.SQRT1_2;
 
         this.direction =
             Math.abs(screenX) > Math.abs(screenY)
                 ? (screenX < 0 ? 2 : 3)
                 : (screenY > 0 ? 1 : 0);
 
-        // ---------------------------------------------
-        // 3. Determine animation state
-        // ---------------------------------------------
+        // Direction:
+        // 0 = front
+        // 1 = back
+        // 2 = left
+        // 3 = right
 
+        // 3. Determine animation state
         if (this.terminal) {
 
             this.state = this.action;
@@ -258,13 +304,12 @@ export class WorldSpriteVisual implements CharacterVisual {
 
         } else {
 
-            this.state = this.running ? 'run' : 'idle';
+            this.state = this.running
+                ? 'run'
+                : 'idle';
         }
 
-        // ---------------------------------------------
-        // 4. Determine sprite atlas
-        // ---------------------------------------------
-
+        // 4. Combat action
         const actionIndex = [
             'shoot',
             'slash',
@@ -278,7 +323,8 @@ export class WorldSpriteVisual implements CharacterVisual {
             this.actions !== null &&
             actionIndex >= 0;
 
-        let column = 0;
+        // 5. Default atlas column
+        let column: number;
 
         if (useAction) {
 
@@ -286,75 +332,90 @@ export class WorldSpriteVisual implements CharacterVisual {
 
         } else if (this.kind === 'rin') {
 
-            if (this.running && !this.terminal) {
-
-                column =
-                    2 +
-                    (Math.floor(this.age * this.runFPS) % 2);
-
-            } else {
-
-                column =
-                    Math.floor(this.age * this.idleFPS) % 2;
-            }
+            column = this.state === 'run'
+                ? 2 + Math.floor(this.age * 6) % 2
+                : Math.floor(this.age * 2) % 2;
 
         } else {
 
-            const baseColumn =
-                this.kind === 'runner' ? 2 : 0;
-
-            const animationFrame =
-                moving > 0.05
-                    ? Math.floor(this.age * this.enemyFPS) % 2
-                    : 0;
-
-            column = baseColumn + animationFrame;
+            column =
+                (this.kind === 'runner' ? 2 : 0) +
+                (
+                    moving > 0.05
+                        ? Math.floor(this.age * 5) % 2
+                        : 0
+                );
         }
 
-        // ---------------------------------------------
-        // 5. Update sprite frame
-        // ---------------------------------------------
+        // 6. Select the correct running atlas
 
-        const frame =
-            this.direction * (useAction ? 5 : 4) + column;
 
-        const useRunRight =
+        const runAtlas =
             this.kind === 'rin' &&
-            this.runRightAtlas !== null &&
-            this.state === 'run' &&
-            this.direction === 3;
+            this.state === 'run'
+                ? this.runAtlases[this.direction]
+                : null;
 
-        const runRightFrame = Math.floor(this.age * 12) % 8;
+        const useRunAtlas = runAtlas !== null;
 
-        const textureKey =
-            useAction ? 'actions' :
-                useRunRight ? 'run-right' :
-                    'locomotion';
+        // Eight running frames, 12 FPS
+        const runFrame =
+            Math.floor(this.age * SpriteConfig.runFPS) % 8;
 
-        const selectedFrame = useRunRight ? runRightFrame : frame;
+        const atlasFrame =
+            this.direction *
+            (useAction ? 5 : 4) +
+            column;
 
+        const nextFrame =
+            useRunAtlas
+                ? runFrame
+                : atlasFrame;
+
+        const nextTextureKey =
+            useAction
+                ? 'actions'
+                : useRunAtlas
+                    ? `run-${this.direction}`
+                    : 'locomotion';
+
+        // 7. Apply selected texture and frame
         if (
-            selectedFrame !== this.frame ||
-            textureKey !== this.textureKey
+            nextFrame !== this.frame ||
+            nextTextureKey !== this.textureKey
         ) {
-            this.frame = selectedFrame;
-            this.textureKey = textureKey;
 
-            if (useRunRight) {
-                this.material.setProperty(
-                    'mainTexture',
-                    this.runRightAtlas!,
-                );
+            this.frame = nextFrame;
+            this.textureKey = nextTextureKey;
 
-                // Eight equal-width frames in one horizontal row.
-                this.uv.set(1 / 8, 1, runRightFrame / 8, 0);
+            const selectedTexture =
+                useAction
+                    ? this.actions!
+                    : useRunAtlas
+                        ? runAtlas!
+                        : this.texture;
+
+            if (this.material.getProperty('mainTexture') !== selectedTexture) {
+                this.material.setProperty('mainTexture', selectedTexture);
+            }
+
+            let left: number;
+            let right: number;
+            let top: number;
+            let bottom: number;
+
+            if (useRunAtlas) {
+
+                // Eight equal-width frames in one row.
+                left = runFrame / 8;
+                right = (runFrame + 1) / 8;
+
+                top = 0;
+                bottom = 1;
 
             } else {
-                this.material.setProperty(
-                    'mainTexture',
-                    useAction ? this.actions! : this.texture,
-                );
 
+                // Original idle/action/zombie atlas layout
                 const rows = useAction
                     ? [0, 305, 589, 852, 1122]
                     : this.kind === 'rin'
@@ -370,7 +431,14 @@ export class WorldSpriteVisual implements CharacterVisual {
                 const height = rows[4];
 
                 const columns = useAction
-                    ? [0, 295, 603, 882, 1094, 1402]
+                    ? [
+                        0,
+                        295,
+                        603,
+                        882,
+                        1094,
+                        1402,
+                    ]
                     : [
                         0,
                         width / 4,
@@ -379,85 +447,73 @@ export class WorldSpriteVisual implements CharacterVisual {
                         width,
                     ];
 
-                const top = rows[this.direction] + 1;
-                const bottom = rows[this.direction + 1] - 1;
+                left =
+                    (columns[column] + 1) / width;
 
-                const left = columns[column] + 1;
-                const right = columns[column + 1] - 1;
+                right =
+                    (columns[column + 1] - 1) / width;
 
-                this.uv.set(
-                    (right - left) / width,
-                    (bottom - top) / height,
-                    left / width,
-                    top / height,
-                );
+                top =
+                    (rows[this.direction] + 1) / height;
+
+                bottom =
+                    (rows[this.direction + 1] - 1) / height;
             }
 
+            this.uv.set(right - left, bottom - top, left, top);
             this.material.setProperty('tilingOffset', this.uv);
+
+            // Restore source aspect ratio and account for transparent padding.
+            // Actions retain their crouched/dead heights relative to a standing pose.
+            const referenceHeight = useRunAtlas ? RUN_HEIGHT[this.direction]
+                : useAction ? ACTION_HEIGHT[this.direction]
+                : this.kind === 'rin' ? RIN_HEIGHT[this.direction]
+                : ENEMY_HEIGHT[this.kind === 'runner' ? 1 : 0][this.direction];
+            const feet = useRunAtlas ? RUN_FEET[this.direction][runFrame]
+                : useAction ? ACTION_FEET[this.direction][column]
+                : this.kind === 'rin' ? RIN_FEET[this.direction][column]
+                : ENEMY_FEET[this.direction][column];
+            const pixelWidth = (right - left) * selectedTexture.width;
+            const pixelHeight = (bottom - top) * selectedTexture.height;
+            this.width = pixelWidth / referenceHeight * this.size;
+            this.height = pixelHeight / referenceHeight * this.size;
+            // Non-running cells have a one-pixel inset on each edge.
+            this.footPadding = Math.max(0, pixelHeight - feet + (useRunAtlas ? 0 : 1))
+                / referenceHeight * this.size;
         }
 
-        // ---------------------------------------------
-        // 6. Face the camera
-        // ---------------------------------------------
-
+        // 8. Face the camera
         this.root.setWorldRotation(
             this.camera.worldRotation,
         );
 
-        // ---------------------------------------------
-        // 7. Subtle running animation
-        // ---------------------------------------------
+        // 9. No synthetic bob: motion comes from the actual artwork.
 
-        // Apply only to Rin.
-        // Does not modify the actor or collision position.
-        let visualOffsetY = 0;
-
-        if (
-            this.kind === 'rin' &&
-            this.running &&
-            this.state === 'run'
-        ) {
-
-            const bounce = Math.abs(
-                Math.sin(
-                    this.age * this.runBobFrequency,
-                ),
-            );
-
-            visualOffsetY =
-                bounce * this.runBobAmount;
-        }
-
-        this.root.setPosition(
-            0,
-            visualOffsetY,
-            0,
-        );
-
-        // ---------------------------------------------
-        // 8. Action transforms
-        // ---------------------------------------------
-
+        // 10. Dodge/death scaling
         let scaleY = 1;
 
-        if (!useAction && this.state === 'dodge') {
+        if (
+            !useAction &&
+            this.state === 'dodge'
+        ) {
             scaleY = 0.72;
         }
 
-        if (!useAction && this.state === 'die') {
+        if (
+            !useAction &&
+            this.state === 'die'
+        ) {
             scaleY = 0.18;
         }
 
-        this.root.setScale(
-            1,
-            scaleY,
-            1,
-        );
+        this.root.setScale(this.width, this.height * scaleY, 1);
+        // Offset along billboard up, not world Y, so visible feet meet the actor origin.
+        this.offset.set(0, -this.footPadding * scaleY, 0);
+        Vec3.transformQuat(this.offset, this.offset, this.camera.worldRotation);
+        Vec3.add(this.offset, this.offset, this.actor.worldPosition);
+        this.root.setWorldPosition(this.offset);
 
-        // ---------------------------------------------
-        // 9. Damage feedback
-        // ---------------------------------------------
-
+        // 11. Damage color
         this.material.setProperty(
             'mainColor',
             this.state === 'hurt'
@@ -466,13 +522,12 @@ export class WorldSpriteVisual implements CharacterVisual {
         );
     }
 
-    /**
-     * Release GPU resources.
-     */
     destroy(): void {
 
-        this.material.destroy();
+        this.renderer.mesh = null;
+
         this.mesh.destroy();
+        this.material.destroy();
         this.root.destroy();
     }
 }

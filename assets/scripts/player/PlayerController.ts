@@ -86,6 +86,21 @@ export class PlayerController extends Component {
             Quat.slerp(this.rotation, this.node.rotation, this.targetRotation, 1 - Math.exp(-C.turnSpeed * dt));
             this.node.setRotation(this.rotation);
         }
-        this.visual?.animate(dt, Math.min(1, actualSpeed / C.speed));
+        const inputStrength = Math.min(
+            1,
+            Math.hypot(direction.x, direction.z)
+        );
+
+        const movementStrength = Math.min(
+            1,
+            Math.hypot(this.vx, this.vz) / Math.max(C.speed, 0.001)
+        );
+
+        const animationStrength = Math.max(
+            inputStrength,
+            movementStrength
+        );
+
+        this.visual?.animate(dt, animationStrength);
     }
 }

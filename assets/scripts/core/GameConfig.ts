@@ -6,6 +6,11 @@ export const GameConfig = {
     joystickRadius: 68, joystickDeadZone: 0.14,
 };
 
+/** Visible billboard heights (excluding transparent padding), in world units. */
+export const SpriteConfig = {
+    runFPS: 12, characterHeight: 2.15, runnerHeight: 1.95, bossHeight: 4.2,
+};
+
 export const Palette = {
     navy: '#171D30', purple: '#29243D', charcoal: '#252731',
     pink: '#D56A91', red: '#D84A63', cyan: '#67B7C6',

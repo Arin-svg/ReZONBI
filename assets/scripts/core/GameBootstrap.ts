@@ -28,17 +28,6 @@ import { CombatEncounter } from './CombatEncounter';
 
 const { ccclass, property } = _decorator;
 
-/**
- * Re:ZONBI Game Bootstrap
- *
- * Creates:
- * - Residential arena
- * - One playable Rin
- * - Anime sprite visuals
- * - Camera tracking
- * - Movement HUD
- * - Zombie encounter
- */
 @ccclass('GameBootstrap')
 export class GameBootstrap extends Component {
 
@@ -58,6 +47,15 @@ export class GameBootstrap extends Component {
     rinRunRightAtlas: Texture2D | null = null;
 
     @property(Texture2D)
+    rinRunFrontAtlas: Texture2D | null = null;
+
+    @property(Texture2D)
+    rinRunBackAtlas: Texture2D | null = null;
+
+    @property(Texture2D)
+    rinRunLeftAtlas: Texture2D | null = null;
+
+    @property(Texture2D)
     infectedAtlas: Texture2D | null = null;
 
     @property(EffectAsset)
@@ -66,37 +64,18 @@ export class GameBootstrap extends Component {
     private spriteVisual: WorldSpriteVisual | null = null;
     private geometry: GeometryFactory | null = null;
 
-    private initialized = false;
-
     onLoad(): void {
 
-        // Only the GameManager component should
-        // initialize the game.
+        // Prevent duplicate initialization.
         if (this.node.name !== 'GameManager') {
             console.warn(
-                'Skipping duplicate GameBootstrap on:',
+                'Skipping GameBootstrap on unexpected node:',
                 this.node.name
             );
             return;
         }
 
-        if (this.initialized) {
-            console.warn(
-                'GameBootstrap already initialized.'
-            );
-            return;
-        }
-
-        this.initialized = true;
-
-        console.log(
-            'Re:ZONBI bootstrap starting:',
-            this.node.name
-        );
-
-        // -----------------------------------------
-        // 1. Display configuration
-        // -----------------------------------------
+        console.log('Re:ZONBI GameBootstrap starting');
 
         view.setDesignResolutionSize(
             1280,
@@ -112,9 +91,9 @@ export class GameBootstrap extends Component {
             );
         }
 
-        // -----------------------------------------
-        // 2. Find scene and camera
-        // -----------------------------------------
+        // ------------------------------------
+        // 1. Scene and camera
+        // ------------------------------------
 
         const sceneRoot = this.node.scene;
 
@@ -133,8 +112,7 @@ export class GameBootstrap extends Component {
             );
         }
 
-        const camera =
-            cameraNode.getComponent(Camera);
+        const camera = cameraNode.getComponent(Camera);
 
         if (!camera) {
             throw new Error(
@@ -142,81 +120,60 @@ export class GameBootstrap extends Component {
             );
         }
 
-        // -----------------------------------------
-        // 3. Create city environment
-        // -----------------------------------------
+        // ------------------------------------
+        // 2. Create arena
+        // ------------------------------------
 
         this.geometry = new GeometryFactory(
             this.surfaceEffect
         );
 
-        const arena =
-            new Node('Residential Arena');
-
-        // Important: add to the scene root.
-        sceneRoot.addChild(arena);
+        const arena = new Node('Residential Arena');
+        this.node.addChild(arena);
 
         const obstacles = buildResidential(
             arena,
             this.geometry
         );
 
-        // -----------------------------------------
-        // 4. Create ONE playable Rin
-        // -----------------------------------------
+        // ------------------------------------
+        // 3. Create Rin
+        // ------------------------------------
 
         const rin = new Node('Rin');
 
-        // Important: add to the scene root.
-        sceneRoot.addChild(rin);
-
+        this.node.addChild(rin);
         rin.setPosition(0, 0.06, 1);
 
-        // -----------------------------------------
-        // 5. Select character visual
-        // -----------------------------------------
+        // ------------------------------------
+        // 4. Choose character visual
+        // ------------------------------------
 
-        const useAnimeSprite =
-            this.rinSpriteAtlas !== null &&
-            this.spriteEffect !== null;
+        let visual;
 
-        let visual:
-            WorldSpriteVisual |
-            RiggedCharacterVisual |
-            RinVisual;
+        if (this.rinSpriteAtlas && this.spriteEffect) {
 
-        if (useAnimeSprite) {
-
-            this.spriteVisual =
-                new WorldSpriteVisual(
-                    rin,
-                    cameraNode,
-                    this.rinSpriteAtlas!,
-                    this.spriteEffect!,
-                    'rin',
-                    this.rinActionAtlas,
-                    this.rinRunRightAtlas
-                );
+            this.spriteVisual = new WorldSpriteVisual(
+                rin,
+                cameraNode,
+                this.rinSpriteAtlas,
+                this.spriteEffect,
+                'rin',
+                this.rinActionAtlas,
+                this.rinRunRightAtlas,
+                this.rinRunFrontAtlas,
+                this.rinRunBackAtlas,
+                this.rinRunLeftAtlas
+            );
 
             visual = this.spriteVisual;
 
-            console.log(
-                'Rin anime sprite initialized.'
-            );
-
         } else if (this.rinModel) {
 
-            const model =
-                instantiate(this.rinModel);
+            const model = instantiate(this.rinModel);
 
-            visual =
-                new RiggedCharacterVisual(model);
-
+            visual = new RiggedCharacterVisual(model);
             rin.addChild(visual.root);
-
-            console.log(
-                'Rin prefab initialized.'
-            );
 
         } else {
 
@@ -224,37 +181,31 @@ export class GameBootstrap extends Component {
                 rin,
                 this.geometry
             );
-
-            console.log(
-                'Rin fallback visual initialized.'
-            );
         }
 
-        // -----------------------------------------
-        // 6. Player controller
-        // -----------------------------------------
+        // ------------------------------------
+        // 5. Player controller
+        // ------------------------------------
 
-        const player =
-            rin.addComponent(PlayerController);
+        const player = rin.addComponent(
+            PlayerController
+        );
 
         player.obstacles = obstacles;
         player.visual = visual;
 
-        // -----------------------------------------
-        // 7. Configure camera
-        // -----------------------------------------
+        // ------------------------------------
+        // 6. Camera settings
+        // ------------------------------------
 
         camera.projection =
             Camera.ProjectionType.ORTHO;
 
-        camera.orthoHeight =
-            C.orthoHeight;
-
+        camera.orthoHeight = C.orthoHeight;
         camera.near = 0.1;
         camera.far = 120;
 
-        camera.visibility =
-            Layers.Enum.DEFAULT;
+        camera.visibility = Layers.Enum.DEFAULT;
 
         camera.clearFlags =
             Camera.ClearFlag.SOLID_COLOR;
@@ -262,70 +213,81 @@ export class GameBootstrap extends Component {
         camera.clearColor =
             new Color().fromHEX(Palette.navy);
 
-        // -----------------------------------------
-        // 8. Camera tracking
-        // -----------------------------------------
+        // ------------------------------------
+        // 7. Camera tracking
+        // ------------------------------------
 
         const tracking =
-            cameraNode.getComponent(
-                IsometricCamera
-            ) ??
-            cameraNode.addComponent(
-                IsometricCamera
-            );
+            cameraNode.getComponent(IsometricCamera) ??
+            cameraNode.addComponent(IsometricCamera);
 
         tracking.target = rin;
 
-        tracking.buildings =
-            arena.children.filter(
-                node =>
-                    node.name === 'Building facade'
+        tracking.buildings = arena.children.filter(
+            node => node.name === 'Building facade'
+        );
+
+        // ------------------------------------
+        // 8. Create exploration HUD
+        // IMPORTANT: Use sceneRoot, not GameManager
+        // ------------------------------------
+
+        player.joystick = buildExplorationHUD(
+            sceneRoot,
+            player
+        );
+
+        // Check that the expected UI nodes exist.
+        const mobileCanvas =
+            sceneRoot.getChildByName('Mobile Canvas');
+
+        const safeArea =
+            mobileCanvas?.getChildByName('Safe area');
+
+        if (!mobileCanvas || !safeArea) {
+            console.error(
+                'Missing Mobile Canvas or Safe area. ' +
+                'Check buildExplorationHUD() in ExplorationHUD.ts.'
             );
 
-        // -----------------------------------------
-        // 9. Exploration HUD
-        // -----------------------------------------
+            return;
+        }
 
-        player.joystick =
-            buildExplorationHUD(
-                sceneRoot,
-                player
-            );
+        console.log(
+            'Mobile Canvas and Safe area found.'
+        );
 
-        // -----------------------------------------
-        // 10. Zombie sprite textures
-        // -----------------------------------------
+        // ------------------------------------
+        // 9. Configure infected sprites
+        // ------------------------------------
 
-        if (
-            this.infectedAtlas &&
-            this.spriteEffect
-        ) {
+        if (this.infectedAtlas && this.spriteEffect) {
 
             this.geometry.spriteAssets = {
                 camera: cameraNode,
                 effect: this.spriteEffect,
                 infected: this.infectedAtlas
             };
-
-            console.log(
-                'Zombie sprite assets initialized.'
-            );
         }
 
-        // -----------------------------------------
-        // 11. Combat encounter
-        // -----------------------------------------
+        // ------------------------------------
+        // 10. Initialize combat
+        // ------------------------------------
 
         const encounterNode =
             new Node('Combat Encounter');
 
-        // Important: add to the scene root.
+        // Keep the encounter under GameManager.
+        this.node.addChild(encounterNode);
+
+        // CombatEncounter expects Mobile Canvas
+        // under its parent. Therefore, place
+        // the encounter directly under sceneRoot.
+        encounterNode.removeFromParent();
         sceneRoot.addChild(encounterNode);
 
         const encounter =
-            encounterNode.addComponent(
-                CombatEncounter
-            );
+            encounterNode.addComponent(CombatEncounter);
 
         encounter.initialize(
             player,
@@ -334,16 +296,12 @@ export class GameBootstrap extends Component {
         );
 
         console.log(
-            'Re:ZONBI initialization completed.'
+            'Re:ZONBI combat initialized successfully.'
         );
     }
 
     onDestroy(): void {
-
         this.spriteVisual?.destroy();
-        this.spriteVisual = null;
-
         this.geometry?.destroy();
-        this.geometry = null;
     }
 }
