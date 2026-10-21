@@ -41,7 +41,8 @@ export function buildResidential(parent: Node, g: GeometryFactory): Obstacle[] {
                 part('Conduit bracket', '#9296A4', x + pipeX, bandY, z - sideZ * 3.13, .16, .055, .16);
             }
         }
-        for (const wx of [-2.3, 0, 2.3]) {
+        const isShop = sideX === -1 && sideZ === -1;
+        if (!isShop) for (const wx of [-2.3, 0, 2.3]) {
             part('Window recess', '#1B2233', x + wx, 2.1, z - sideZ * 3.01, 1.34, 1.32, .12);
             const pane = part('Street window', wx === 0 ? '#DFA66F' : '#477488', x + wx, 2.1, z - sideZ * 3.09, 1.08, 1.04, .035);
             g.glow(pane, wx === 0 ? '#DFA66F' : '#477488', wx === 0 ? .34 : .16);
@@ -61,44 +62,139 @@ export function buildResidential(parent: Node, g: GeometryFactory): Obstacle[] {
         }
         for (const dx of [-3.1, 3.1]) part('Facade column', P.roof, x + dx, 1.7, front, .16, 3.4, .14);
         part('Brick course', '#535163', x, .45, front, 6.8, .12, .1);
-        part('Neon sign backing', '#202438', x, 3.08, front - sideZ * .08, 3.7, .48, .14);
-        for (const dx of [-1.72, 1.72]) {
-            const edge = part('Neon sign edge', trim, x + dx, 3.08, front - sideZ * .17, .035, .42, .025);
-            g.glow(edge, trim, .9);
-        }
-        for (const dy of [-.19, .19]) {
-            const edge = part('Neon sign edge', trim, x, 3.08 + dy, front - sideZ * .17, 3.45, .025, .025);
-            g.glow(edge, trim, .9);
-        }
-        const neon = part('Illuminated sign', '#FF74AE', x, 3.08, front - sideZ * .19, 2.9, .075, .035); g.glow(neon, '#FF74AE', .95);
-        const signSpark = part('Sign spark', '#7AE8F1', x + 1.15, 3.08, front - sideZ * .22, .12, .12, .035); g.glow(signSpark, '#7AE8F1', .9);
-        if (sideX === -1 && sideZ === -1) {
-            part('Convenience store awning', '#842D51', x, 2.55, front - sideZ * .35, 6.5, .22, .75);
+        if (isShop) {
+            const signFace = front - sideZ * .21;
+            part('Shop fascia', '#151A2B', x, 2.93, signFace, 6.25, .68, .2);
+            part('Shop fascia lower trim', '#41475B', x, 2.57, signFace, 6.35, .08, .24);
+            for (const dx of [-3.02, 3.02]) {
+                const neonEdge = part('Shop fascia neon edge', '#FF4F97', x + dx, 2.94, signFace + sideZ * .12, .045, .62, .025);
+                g.glow(neonEdge, '#FF4F97', 1.1);
+            }
+            for (const dy of [2.64, 3.24]) {
+                const neonEdge = part('Shop fascia neon edge', '#FF4F97', x, dy, signFace + sideZ * .12, 6.05, .035, .025);
+                g.glow(neonEdge, '#FF4F97', 1.1);
+            }
+            for (let glyph = -2; glyph <= 2; glyph++) {
+                const glyphX = x + glyph * .83;
+                const color = glyph === 0 ? '#FFF0CB' : '#FF86B5';
+                const top = part('Store sign glyph', color, glyphX, 3.02, signFace + sideZ * .15, .39, .055, .025);
+                const bottom = part('Store sign glyph', color, glyphX, 2.82, signFace + sideZ * .15, .39, .055, .025);
+                const left = part('Store sign glyph', color, glyphX - .17, 2.92, signFace + sideZ * .15, .05, .17, .025);
+                const right = part('Store sign glyph', color, glyphX + .17, 2.92, signFace + sideZ * .15, .05, .17, .025);
+                g.glow(top, color, .8); g.glow(bottom, color, .8); g.glow(left, color, .8); g.glow(right, color, .8);
+                if (glyph !== -2) {
+                    const diagonal = part('Store sign glyph', color, glyphX, 2.92, signFace + sideZ * .16, .055, .2, .025);
+                    diagonal.setRotationFromEuler(0, 0, 38); g.glow(diagonal, color, .8);
+                }
+            }
+            part('Convenience store awning', '#612841', x, 2.43, front - sideZ * .27, 6.5, .19, .82);
+            part('Awning front valance', '#341F36', x, 2.32, front - sideZ * .66, 6.45, .18, .12);
+            const awningNeon = part('Awning neon edge', '#FF568E', x, 2.33, front - sideZ * .73, 6.2, .035, .025);
+            g.glow(awningNeon, '#FF568E', .85);
             for (let stripe = -2; stripe <= 2; stripe++) {
                 const awningStripe = part('Awning neon rib', stripe % 2 ? '#EC5B95' : '#67C8D7', x + stripe * 1.08, 2.55, front - sideZ * .73, .055, .19, .025);
                 g.glow(awningStripe, stripe % 2 ? '#EC5B95' : '#67C8D7', .55);
             }
-            for (const dx of [-2.2, -.7, .7, 2.2]) {
-                const window = part('Store display', '#EAB883', x + dx, 1.35, front - sideZ * .06, 1.25, 1.65, .06); g.glow(window, '#EAB883', .3);
-                part('Display mullion', P.charcoal, x + dx + .58, 1.35, front - sideZ * .04, .07, 1.7, .07);
-                part('Display shelf', '#72546A', x + dx, 1.05, front - sideZ * .1, 1.05, .045, .05);
+            const glassZ = front - sideZ * .1;
+            const frameZ = front - sideZ * .16;
+            for (const dx of [-2.35, -.9, .55]) {
+                part('Shopfront window frame', '#242438', x + dx, 1.38, frameZ, 1.34, 1.88, .14);
+                const window = part('Shopfront display glass', '#D99369', x + dx, 1.42, glassZ, 1.22, 1.73, .035);
+                g.glow(window, '#EBA777', .32);
+                part('Shopfront mullion', '#28283A', x + dx - .68, 1.4, front - sideZ * .19, .085, 1.93, .1);
+                for (const shelfY of [.93, 1.42, 1.9]) {
+                    part('Store display shelf', '#5C4856', x + dx, shelfY, front + sideZ * .23, 1.12, .055, .18);
+                    for (let item = -2; item <= 2; item++) {
+                        const productColor = item % 2 ? '#69D9DF' : '#F08B62';
+                        const product = part('Store shelf product', productColor, x + dx + item * .19, shelfY + .13, front + sideZ * .34, .13, .2, .1);
+                        g.glow(product, productColor, .24);
+                        part('Product label', '#F5DBAF', x + dx + item * .19, shelfY + .13, front + sideZ * .4, .08, .045, .015);
+                    }
+                }
             }
-            part('Store sign bracket', '#69778B', x + 3.35, 2.05, front - sideZ * .08, .12, 2.35, .12);
-            part('Store vertical sign', '#202438', x + 3.58, 2.05, front - sideZ * .12, .55, 2.1, .16);
-            for (const dy of [-.72, -.24, .24, .72]) {
-                const glyph = part('Vertical neon glyph', dy < 0 ? '#FF5C9B' : '#55D8E8', x + 3.58, 2.05 + dy, front - sideZ * .22, .28, .09, .035);
+            const entranceX = x + 2.35;
+            part('Shop entrance surround', '#404459', entranceX, 1.43, front - sideZ * .18, 1.28, 2.02, .2);
+            part('Shop entrance glass', '#346579', entranceX, 1.4, front - sideZ * .29, 1.04, 1.82, .06);
+            part('Shop door divider', '#242438', entranceX, 1.4, front - sideZ * .33, .075, 1.84, .045);
+            part('Shop door handle', '#E8B77E', entranceX - .37, 1.3, front - sideZ * .38, .055, .3, .06);
+            part('Shop door kickplate', '#344156', entranceX, .57, front - sideZ * .36, .95, .14, .06);
+            part('Shop door transom', '#5BD4E0', entranceX, 2.22, front - sideZ * .32, .82, .08, .025);
+            part('Shop entrance step', '#727182', entranceX, .22, front - sideZ * .43, 1.5, .16, .55);
+            part('Projecting sign bracket', '#525A6D', x - 2.8, 2.35, front - sideZ * .38, .12, .9, .48);
+            part('Projecting sign box', '#171D31', x - 2.8, 2.65, front - sideZ * .72, .82, 1.32, .18);
+            for (const dy of [-.45, 0, .45]) {
+                const glyph = part('Vertical neon glyph', dy === 0 ? '#55D8E8' : '#FF5C9B', x - 2.8, 2.65 + dy, front - sideZ * .83, .45, .1, .035);
                 g.glow(glyph, dy < 0 ? '#FF5C9B' : '#55D8E8', .9);
             }
+            part('Shop vending machine', '#263752', x - 3.28, .92, front - sideZ * .52, .68, 1.72, .62);
+            part('Shop vending display frame', '#161E31', x - 3.28, 1.16, front - sideZ * .86, .5, 1, .045);
+            const vendingGlow = part('Shop vending display', '#50BDD5', x - 3.28, 1.16, front - sideZ * .9, .39, .84, .025);
+            g.glow(vendingGlow, '#50D8E8', .7);
+            for (let row = 0; row < 3; row++) for (let col = -1; col <= 1; col++) {
+                const can = part('Vending machine drink', row % 2 ? '#E77A86' : '#77DBD7', x - 3.28 + col * .11, .88 + row * .23, front - sideZ * .94, .07, .15, .025);
+                g.glow(can, row % 2 ? '#E77A86' : '#77DBD7', .35);
+            }
+            part('Vending machine foot', '#111726', x - 3.28, .12, front - sideZ * .5, .68, .16, .62);
+            for (const dx of [-3.02, 3.02]) {
+                part('Storefront pillar', '#41475B', x + dx, 1.32, front - sideZ * .14, .18, 2.1, .2);
+                for (const y of [.5, 1, 1.5, 2]) {
+                    const bolt = g.form(building, 'Storefront pillar bolt', '#A4A6AC', x + dx, y, front - sideZ * .26, .055, .055, .025, 'crystal');
+                    bolt.setRotationFromEuler(0, 0, 45);
+                }
+            }
+            for (const dx of [-2.7, -1.2, .3, 1.8]) {
+                const support = part('Awning support', '#565B70', x + dx, 1.92, front - sideZ * .48, .055, .82, .06);
+                support.setRotationFromEuler(0, 0, 7);
+            }
+            for (const [plantX, plantZ] of [[-2.8, -2.6], [2.7, -2.3]]) {
+                part('Roof planter', '#34394C', x + plantX, 3.82, z - sideZ * Math.abs(plantZ), 1.35, .28, .8);
+                for (let leaf = 0; leaf < 5; leaf++) {
+                    const leafNode = g.form(building, 'Rooftop plant', leaf % 2 ? '#508773' : '#6AA17C',
+                        x + plantX - .5 + leaf * .24, 4.12 + (leaf % 2) * .12, z - sideZ * Math.abs(plantZ), .27, .65, .3, 'crystal');
+                    leafNode.setRotationFromEuler(0, 0, (leaf - 2) * 17);
+                }
+            }
+            for (const dx of [-3.45, 3.45]) {
+                part('Shop security grille rail', '#31394C', x + dx, 3.85, z - sideZ * 1, .08, .08, 3.8);
+                for (let bar = 0; bar < 5; bar++) {
+                    const vine = g.form(building, 'Hanging rooftop vine', '#477A62', x + dx + (bar % 2) * .16, 3.32 - bar * .42, z - sideZ * 2.65, .1, .65, .11, 'crystal');
+                    vine.setRotationFromEuler(0, 0, (bar % 2 ? 1 : -1) * 12);
+                }
+            }
+            for (const [propX, propZ, propColor] of [[-3.5, .15, '#AC604B'], [-2.9, .15, '#D39151'], [3.2, .25, '#526958']] as const) {
+                part('Shop delivery crate', '#383B4C', x + propX, .34, front - sideZ * propZ, .65, .65, .55);
+                part('Crate face inset', propColor, x + propX, .35, front - sideZ * (propZ + .28), .48, .42, .045);
+                for (const cross of [-1, 1]) {
+                    const brace = part('Crate brace', '#666071', x + propX, .35, front - sideZ * (propZ + .31), .05, .52, .025);
+                    brace.setRotationFromEuler(0, 0, cross * 43);
+                }
+            }
+            part('Shop trash bin', '#304A49', x + 3.4, .53, front - sideZ * .8, .64, 1.02, .72);
+            part('Trash bin lid', '#3A5953', x + 3.4, 1.07, front - sideZ * .8, .72, .12, .8);
+            part('Trash bin handle', '#A6A28C', x + 3.4, 1.17, front - sideZ * .8, .26, .045, .12);
         } else {
+            part('Neon sign backing', '#202438', x, 3.08, front - sideZ * .08, 3.7, .48, .14);
+            for (const dx of [-1.72, 1.72]) {
+                const edge = part('Neon sign edge', trim, x + dx, 3.08, front - sideZ * .17, .035, .42, .025);
+                g.glow(edge, trim, .9);
+            }
+            for (const dy of [-.19, .19]) {
+                const edge = part('Neon sign edge', trim, x, 3.08 + dy, front - sideZ * .17, 3.45, .025, .025);
+                g.glow(edge, trim, .9);
+            }
+            const neon = part('Illuminated sign', '#FF74AE', x, 3.08, front - sideZ * .19, 2.9, .075, .035); g.glow(neon, '#FF74AE', .95);
+            const signSpark = part('Sign spark', '#7AE8F1', x + 1.15, 3.08, front - sideZ * .22, .12, .12, .035); g.glow(signSpark, '#7AE8F1', .9);
             const broken = part('Broken window diagonal', P.charcoal, x + 2.3, 2.1, front - sideZ * .02, .08, 1.2, .08); broken.setRotationFromEuler(0, 0, 32);
             part('External duct', '#61616E', x + 2.7, 3.85, z + 1, .7, .55, 1.4);
-            const neon = part('Vertical alley neon', '#55D8E8', x - 3.35, 2.3, front - sideZ * .16, .07, 1.15, .035);
-            g.glow(neon, '#55D8E8', .8);
+            const alleyNeon = part('Vertical alley neon', '#55D8E8', x - 3.35, 2.3, front - sideZ * .16, .07, 1.15, .035);
+            g.glow(alleyNeon, '#55D8E8', .8);
         }
         // Props remain inside the existing solid house footprint, preserving navigation.
-        part('Vending machine', '#4A344F', x - 2.9, .9, front + sideZ * .3, .65, 1.7, .5);
-        const vending = part('Vending display', '#79BFD0', x - 2.9, 1.15, front - sideZ * .01, .45, .8, .04); g.glow(vending, '#79BFD0', .35);
-        part('Vending slot', P.charcoal, x - 2.9, .35, front - sideZ * .02, .4, .15, .05);
+        if (!isShop) {
+            part('Vending machine', '#4A344F', x - 2.9, .9, front + sideZ * .3, .65, 1.7, .5);
+            const vending = part('Vending display', '#79BFD0', x - 2.9, 1.15, front - sideZ * .01, .45, .8, .04); g.glow(vending, '#79BFD0', .35);
+            part('Vending slot', P.charcoal, x - 2.9, .35, front - sideZ * .02, .4, .15, .05);
+        }
         visualParent = parent;
         solid('Garden wall', P.purple, x, 0.45, z + sideZ * 4.6, 9, 0.9, 0.3);
         solid('Planter', P.roof, x - sideX * 4.8, 0.35, z + 2.2, 1.1, 0.7, 2.2);
