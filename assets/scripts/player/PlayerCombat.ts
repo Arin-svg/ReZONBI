@@ -106,7 +106,7 @@ export class PlayerCombat extends Component {
             inArc(origin, facing, enemy.position, C.knifeRange, C.knifeArc) && clearLine(origin, enemy.position, this.context.obstacles)) {
             enemy.receiveDamage({ amount: C.knifeDamage, id, source: 'Rin', kind: 'knife' });
         }
-        this.context.effects.slash(origin, facing, C.knifeRange, C.knifeArc, '#F4588C'); this.context.player.visual?.play('slash', 0.28); return true;
+        this.context.effects.knifeSlash(origin, facing, C.knifeRange, C.knifeArc); this.context.player.visual?.play('slash', 0.36); return true;
     }
     dodge(): boolean {
         if (!this.context?.canAct() || this.dodgeCooldown > 1e-6) return false;

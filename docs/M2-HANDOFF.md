@@ -25,7 +25,7 @@ Mouse clicks on UI controls do not also shoot into the world. Each combat button
 
 - **Damage:** common `DamageHit`/`Damageable` interface and bounded `HealthState`, with duplicate-event rejection, hit protection, invulnerability and death rejection. Player health is clamped to 0–400.
 - **Pistol:** nearest live/active target within range and unobstructed XZ line of sight, repeat-fire cooldown, hitscan damage, facing assistance, recoil, muzzle flash, moving bullet visuals and impact feedback.
-- **Knife:** directional range/arc check, obstacle blocking, one hit per enemy per slash, cooldown, arm animation and seven-segment slash effect.
+- **Knife:** directional range/arc check, obstacle blocking, one hit per enemy per slash, cooldown, arm animation and an expanding double-crescent slash sweep.
 - **Dodge:** current input direction or facing fallback, collision-aware 3.5m burst, bounded invulnerability, cooldown display and cyan trail feedback. Uses the existing movement solver.
 - **Enemies:** reusable `ZombieBase` component configured as Walker or Runner; separate silhouettes, speed/health differences, procedural movement/attack/hit/death feedback, and overhead health bars.
 - **AI:** Idle, Investigate, Chase, Attack, Stunned, Dead. Attacks visibly wind up and recheck distance/line of sight at impact. Dead enemies cannot attack. A static 35×35 A* grid routes around obstacles with body clearance; path shortcuts are also clearance-tested. Enemies separate from each other and Rin, and stay within arena bounds.
@@ -43,7 +43,7 @@ All combat defaults are in `assets/scripts/core/GameConfig.ts` (`CombatConfig`).
 | --- | --- |
 | Rin HP / hit protection | 400 / 0.35s |
 | Pistol damage / interval / range | 24 / 0.25s / 12m |
-| Knife damage / cooldown / range / arc | 40 / 0.6s / 2.2m / 110° |
+| Knife damage / cooldown / range / arc | 40 / 0.6s / 3.2m / 145° |
 | Dodge distance / duration / cooldown / invulnerability | 3.5m / 0.25s / 3s / 0.25s |
 | Walker HP / speed / damage | 80 / 2m/s / 15 |
 | Walker range / recovery / detection / wind-up | 1.4m / 1.5s / 8m / 0.38s |
@@ -82,7 +82,7 @@ Added developer tests: `tools/test-m2.cjs`, `tools/cdp-client.cjs`, `tools/brows
 | --- | --- |
 | TypeScript against installed Cocos 3.8.8 declarations | Pass |
 | Existing M1 logic checks | 8 passed |
-| M2 health, targeting, LOS, knife arc, invulnerability, navigation and tuning checks | 8 passed |
+| M2 health, targeting, LOS, knife arc, invulnerability, navigation and tuning checks | 9 passed |
 | Full M2 browser tests in generated web build | 31 passed |
 | Full M2 browser tests in Cocos Creator Preview (`localhost:7456`) | 29 passed |
 | Original M1 runtime regression in Creator Preview | Passed: movement, camera, collision, multitouch, drag/cancel, pause and HUD |

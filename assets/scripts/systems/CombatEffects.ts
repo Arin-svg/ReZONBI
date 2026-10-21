@@ -6,6 +6,17 @@ import { GeometryFactory } from '../levels/GeometryFactory';
 export class CombatEffects {
     private pool: { node: Node; life: number }[] = [];
     private bullets: { node: Node; from: PointXZ; to: PointXZ; distance: number; traveled: number }[] = [];
+    private knifeSegments: {
+        node: Node;
+        layer: number;
+        index: number;
+        origin: PointXZ;
+        angle: number;
+        range: number;
+        arc: number;
+    }[] = [];
+    private knifeProgress = 0;
+    private knifeActive = false;
     private cursor = 0;
     constructor(parent: Node, private readonly geometry: GeometryFactory) {
         for (let i = 0; i < 32; i++) {
@@ -16,6 +27,17 @@ export class CombatEffects {
             const node = geometry.part(parent, 'Bullet projectile', '#FFE5A8', 0, 1.05, 0, 0.07, 0.07, 0.28, true);
             node.active = false;
             this.bullets.push({ node, from: { x: 0, z: 0 }, to: { x: 0, z: 0 }, distance: 0, traveled: 0 });
+        }
+        const colors = ['#FF4F97', '#FFF0F8'];
+        for (let layer = 0; layer < colors.length; layer++) {
+            for (let index = 0; index < 12; index++) {
+                const node = geometry.part(parent, 'Knife slash ribbon', colors[layer], 0, .52, 0, .14, .045, .1);
+                node.active = false;
+                node.getComponent(MeshRenderer)!.setSharedMaterial(geometry.material(colors[layer], layer ? 1.1 : .8), 0);
+                this.knifeSegments.push({
+                    node, layer, index, origin: { x: 0, z: 0 }, angle: 0, range: 0, arc: 0,
+                });
+            }
         }
     }
     bullet(a: PointXZ, b: PointXZ, color: string): void {
@@ -44,6 +66,40 @@ export class CombatEffects {
                 { x: p.x + Math.sin(b) * range, z: p.z + Math.cos(b) * range }, color, 0.18, 0.07);
         }
     }
+    knifeSlash(p: PointXZ, facing: PointXZ, range: number, arc: number): void {
+        const angle = Math.atan2(facing.x, facing.z);
+        this.knifeProgress = 0;
+        this.knifeActive = true;
+        for (const segment of this.knifeSegments) {
+            segment.origin.x = p.x; segment.origin.z = p.z;
+            segment.angle = angle; segment.range = range;
+            segment.arc = arc * Math.PI / 180;
+            segment.node.active = false;
+        }
+        this.updateKnifeSlash(0);
+    }
+    private updateKnifeSlash(progress: number): void {
+        const count = 12;
+        for (const segment of this.knifeSegments) {
+            const portion = (segment.index + .5) / count;
+            if (progress <= 0 || portion > progress) { segment.node.active = false; continue; }
+            segment.node.active = true;
+            const sweep = segment.arc * progress;
+            const angle = segment.angle - segment.arc / 2 + sweep * portion;
+            const layerScale = segment.layer ? .82 : 1;
+            const radius = segment.range * (.46 + .54 * progress) * layerScale;
+            const halfSegment = Math.max(.001, sweep / count / 2);
+            const a = angle - halfSegment, b = angle + halfSegment;
+            const ax = segment.origin.x + Math.sin(a) * radius;
+            const az = segment.origin.z + Math.cos(a) * radius;
+            const bx = segment.origin.x + Math.sin(b) * radius;
+            const bz = segment.origin.z + Math.cos(b) * radius;
+            const dx = bx - ax, dz = bz - az;
+            segment.node.setPosition((ax + bx) / 2, .52 + segment.layer * .015, (az + bz) / 2);
+            segment.node.setScale(segment.layer ? .055 : .16, .045, Math.max(.04, Math.hypot(dx, dz)));
+            segment.node.setRotationFromEuler(0, Math.atan2(dx, dz) * 180 / Math.PI, 0);
+        }
+    }
     tick(dt: number): void {
         for (const e of this.pool) if (e.life > 0) { e.life -= dt; if (e.life <= 0) e.node.active = false; }
         for (const bullet of this.bullets) if (bullet.node.active) {
@@ -56,9 +112,20 @@ export class CombatEffects {
                 bullet.from.z + (bullet.to.z - bullet.from.z) * progress,
             );
         }
+        if (this.knifeActive) {
+            this.knifeProgress += dt / .24;
+            if (this.knifeProgress >= 1) {
+                this.knifeActive = false;
+                this.knifeSegments.forEach(segment => { segment.node.active = false; });
+            } else {
+                this.updateKnifeSlash(this.knifeProgress);
+            }
+        }
     }
     reset(): void {
         this.pool.forEach(e => { e.life = 0; e.node.active = false; });
         this.bullets.forEach(bullet => { bullet.traveled = 0; bullet.node.active = false; });
+        this.knifeProgress = 0; this.knifeActive = false;
+        this.knifeSegments.forEach(segment => { segment.node.active = false; });
     }
 }
