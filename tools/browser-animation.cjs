@@ -91,7 +91,7 @@ const delay = ms => new Promise(r => setTimeout(r, ms));
         for(let d=0;d<4;d++) for(let f=1;f<8;f++) assert.notEqual(hashes[d*8+f],hashes[d*8+f-1],`rendered pixels change: direction ${d} frame ${f}`);
         const actionShots=[];
         for(const [d,yaw] of [[0,-135],[1,45],[2,135],[3,-45]]) for(const action of ['shoot','slash','dodge','hurt','die']) {
-            const state=await c.evaluate(`(()=>{visual.actor.setRotationFromEuler(0,${yaw},0);visual.reset();visual.play('${action}',.4);visual.animate(0,1);
+            const state=await c.evaluate(`(()=>{visual.actor.setRotationFromEuler(0,${yaw},0);visual.reset();visual.play('${action}',.4);visual.animate(0,0);
                 return {state:visual.state,texture:visual.textureKey,frame:visual.frame,finite:Number.isFinite(visual.root.scale.y)};})()`);
             assert.equal(state.state,action);assert.equal(state.texture,'actions');assert.ok(state.finite);
             assert.equal(state.frame,d*5+['shoot','slash','dodge','hurt','die'].indexOf(action));
@@ -100,13 +100,15 @@ const delay = ms => new Promise(r => setTimeout(r, ms));
         await sheet(actionShots,5,`temp/${prefix}-actions.png`);
         const transitions=await c.evaluate(`(()=>{
             const states=[];visual.reset();states.push(visual.state);visual.animate(.1,1);states.push(visual.state);
-            visual.animate(.1,0);states.push(visual.state);visual.play('shoot',.2);visual.animate(.1,1);states.push(visual.state);
+            visual.animate(.1,0);states.push(visual.state);visual.play('shoot',.2);visual.animate(.1,0);states.push(visual.state);
             visual.animate(.2,1);states.push(visual.state);visual.play('die',.1);visual.animate(1,1);states.push(visual.state);
             visual.play('shoot',1);visual.animate(.1,1);states.push(visual.state);visual.reset();states.push(visual.state);
-            for(let i=0;i<1200;i++)visual.animate(1/60,1);
-            return {states,sameMesh:originalMesh===visual.mesh,sameMaterial:originalMaterial===visual.material};})()`);
+            const firingFrames=new Set();let firingKeptRunning=true;
+            for(let i=0;i<1200;i++){if(i%15===0)visual.play('shoot',.16);visual.animate(1/60,1);firingFrames.add(visual.frame);firingKeptRunning=firingKeptRunning&&visual.state==='run';}
+            return {states,firingKeptRunning,firingFrameCount:firingFrames.size,sameMesh:originalMesh===visual.mesh,sameMaterial:originalMaterial===visual.material};})()`);
         assert.deepEqual(transitions.states,['idle','run','idle','shoot','run','die','die','idle']);
         assert.ok(transitions.sameMesh && transitions.sameMaterial);
+        assert.ok(transitions.firingKeptRunning);assert.equal(transitions.firingFrameCount,8);
         fs.writeFileSync(`temp/${prefix}.json`,JSON.stringify({startup,states,hashes,transitions,errors:c.errors},null,2));
         assert.equal(c.errors.length,0,JSON.stringify(c.errors));
         console.log('PASS fresh initialization, one active bootstrap/visual, four atlases, 32 rendered frames with adjacent pixel changes, 20 action poses, transitions/death/reset, stable mesh/material over 1200 updates, no runtime errors.');

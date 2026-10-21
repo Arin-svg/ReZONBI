@@ -1,0 +1,546 @@
+[
+    {
+        "foot":  360,
+        "direction":  "front",
+        "source":  [
+                       10,
+                       19,
+                       370,
+                       492
+                   ],
+        "bounds":  [
+                       66,
+                       25,
+                       252,
+                       335
+                   ],
+        "frame":  0
+    },
+    {
+        "foot":  360,
+        "direction":  "front",
+        "source":  [
+                       394,
+                       19,
+                       369,
+                       486
+                   ],
+        "bounds":  [
+                       66,
+                       29,
+                       251,
+                       331
+                   ],
+        "frame":  1
+    },
+    {
+        "foot":  360,
+        "direction":  "front",
+        "source":  [
+                       774,
+                       20,
+                       372,
+                       491
+                   ],
+        "bounds":  [
+                       65,
+                       25,
+                       254,
+                       335
+                   ],
+        "frame":  2
+    },
+    {
+        "foot":  360,
+        "direction":  "front",
+        "source":  [
+                       1154,
+                       17,
+                       373,
+                       458
+                   ],
+        "bounds":  [
+                       65,
+                       48,
+                       254,
+                       312
+                   ],
+        "frame":  3
+    },
+    {
+        "foot":  360,
+        "direction":  "front",
+        "source":  [
+                       10,
+                       521,
+                       373,
+                       488
+                   ],
+        "bounds":  [
+                       65,
+                       27,
+                       254,
+                       333
+                   ],
+        "frame":  4
+    },
+    {
+        "foot":  360,
+        "direction":  "front",
+        "source":  [
+                       393,
+                       520,
+                       370,
+                       490
+                   ],
+        "bounds":  [
+                       66,
+                       26,
+                       252,
+                       334
+                   ],
+        "frame":  5
+    },
+    {
+        "foot":  360,
+        "direction":  "front",
+        "source":  [
+                       777,
+                       516,
+                       375,
+                       493
+                   ],
+        "bounds":  [
+                       64,
+                       24,
+                       256,
+                       336
+                   ],
+        "frame":  6
+    },
+    {
+        "foot":  360,
+        "direction":  "front",
+        "source":  [
+                       1152,
+                       518,
+                       376,
+                       465
+                   ],
+        "bounds":  [
+                       64,
+                       43,
+                       256,
+                       317
+                   ],
+        "frame":  7
+    },
+    {
+        "foot":  360,
+        "direction":  "back",
+        "source":  [
+                       33,
+                       30,
+                       349,
+                       461
+                   ],
+        "bounds":  [
+                       65,
+                       24,
+                       254,
+                       336
+                   ],
+        "frame":  0
+    },
+    {
+        "foot":  360,
+        "direction":  "back",
+        "source":  [
+                       416,
+                       30,
+                       351,
+                       455
+                   ],
+        "bounds":  [
+                       64,
+                       28,
+                       256,
+                       332
+                   ],
+        "frame":  1
+    },
+    {
+        "foot":  360,
+        "direction":  "back",
+        "source":  [
+                       799,
+                       32,
+                       342,
+                       458
+                   ],
+        "bounds":  [
+                       67,
+                       26,
+                       249,
+                       334
+                   ],
+        "frame":  2
+    },
+    {
+        "foot":  360,
+        "direction":  "back",
+        "source":  [
+                       1158,
+                       30,
+                       358,
+                       445
+                   ],
+        "bounds":  [
+                       61,
+                       36,
+                       261,
+                       324
+                   ],
+        "frame":  3
+    },
+    {
+        "foot":  360,
+        "direction":  "back",
+        "source":  [
+                       38,
+                       528,
+                       338,
+                       449
+                   ],
+        "bounds":  [
+                       69,
+                       33,
+                       246,
+                       327
+                   ],
+        "frame":  4
+    },
+    {
+        "foot":  360,
+        "direction":  "back",
+        "source":  [
+                       408,
+                       527,
+                       360,
+                       447
+                   ],
+        "bounds":  [
+                       61,
+                       34,
+                       262,
+                       326
+                   ],
+        "frame":  5
+    },
+    {
+        "foot":  360,
+        "direction":  "back",
+        "source":  [
+                       768,
+                       528,
+                       370,
+                       457
+                   ],
+        "bounds":  [
+                       57,
+                       27,
+                       270,
+                       333
+                   ],
+        "frame":  6
+    },
+    {
+        "foot":  360,
+        "direction":  "back",
+        "source":  [
+                       1161,
+                       528,
+                       361,
+                       449
+                   ],
+        "bounds":  [
+                       60,
+                       33,
+                       263,
+                       327
+                   ],
+        "frame":  7
+    },
+    {
+        "foot":  360,
+        "direction":  "left",
+        "source":  [
+                       15,
+                       66,
+                       400,
+                       435
+                   ],
+        "bounds":  [
+                       37,
+                       24,
+                       309,
+                       336
+                   ],
+        "frame":  0
+    },
+    {
+        "foot":  360,
+        "direction":  "left",
+        "source":  [
+                       432,
+                       74,
+                       348,
+                       427
+                   ],
+        "bounds":  [
+                       57,
+                       30,
+                       269,
+                       330
+                   ],
+        "frame":  1
+    },
+    {
+        "foot":  360,
+        "direction":  "left",
+        "source":  [
+                       808,
+                       72,
+                       353,
+                       431
+                   ],
+        "bounds":  [
+                       55,
+                       27,
+                       273,
+                       333
+                   ],
+        "frame":  2
+    },
+    {
+        "foot":  360,
+        "direction":  "left",
+        "source":  [
+                       1200,
+                       63,
+                       331,
+                       430
+                   ],
+        "bounds":  [
+                       64,
+                       28,
+                       256,
+                       332
+                   ],
+        "frame":  3
+    },
+    {
+        "foot":  360,
+        "direction":  "left",
+        "source":  [
+                       17,
+                       556,
+                       404,
+                       428
+                   ],
+        "bounds":  [
+                       36,
+                       29,
+                       312,
+                       331
+                   ],
+        "frame":  4
+    },
+    {
+        "foot":  360,
+        "direction":  "left",
+        "source":  [
+                       421,
+                       559,
+                       375,
+                       417
+                   ],
+        "bounds":  [
+                       47,
+                       38,
+                       290,
+                       322
+                   ],
+        "frame":  5
+    },
+    {
+        "foot":  360,
+        "direction":  "left",
+        "source":  [
+                       808,
+                       557,
+                       365,
+                       424
+                   ],
+        "bounds":  [
+                       51,
+                       32,
+                       282,
+                       328
+                   ],
+        "frame":  6
+    },
+    {
+        "foot":  360,
+        "direction":  "left",
+        "source":  [
+                       1211,
+                       544,
+                       325,
+                       430
+                   ],
+        "bounds":  [
+                       66,
+                       28,
+                       251,
+                       332
+                   ],
+        "frame":  7
+    },
+    {
+        "foot":  360,
+        "direction":  "right",
+        "source":  [
+                       14,
+                       59,
+                       386,
+                       427
+                   ],
+        "bounds":  [
+                       40,
+                       25,
+                       298,
+                       335
+                   ],
+        "frame":  0
+    },
+    {
+        "foot":  360,
+        "direction":  "right",
+        "source":  [
+                       400,
+                       62,
+                       332,
+                       427
+                   ],
+        "bounds":  [
+                       61,
+                       25,
+                       261,
+                       335
+                   ],
+        "frame":  1
+    },
+    {
+        "foot":  360,
+        "direction":  "right",
+        "source":  [
+                       777,
+                       63,
+                       375,
+                       428
+                   ],
+        "bounds":  [
+                       45,
+                       24,
+                       294,
+                       336
+                   ],
+        "frame":  2
+    },
+    {
+        "foot":  360,
+        "direction":  "right",
+        "source":  [
+                       1152,
+                       57,
+                       328,
+                       427
+                   ],
+        "bounds":  [
+                       63,
+                       25,
+                       257,
+                       335
+                   ],
+        "frame":  3
+    },
+    {
+        "foot":  360,
+        "direction":  "right",
+        "source":  [
+                       15,
+                       550,
+                       385,
+                       422
+                   ],
+        "bounds":  [
+                       41,
+                       29,
+                       300,
+                       331
+                   ],
+        "frame":  4
+    },
+    {
+        "foot":  360,
+        "direction":  "right",
+        "source":  [
+                       400,
+                       557,
+                       335,
+                       417
+                   ],
+        "bounds":  [
+                       60,
+                       33,
+                       263,
+                       327
+                   ],
+        "frame":  5
+    },
+    {
+        "foot":  360,
+        "direction":  "right",
+        "source":  [
+                       773,
+                       554,
+                       379,
+                       426
+                   ],
+        "bounds":  [
+                       43,
+                       26,
+                       270,
+                       334
+                   ],
+        "frame":  6
+    },
+    {
+        "foot":  360,
+        "direction":  "right",
+        "source":  [
+                       1152,
+                       550,
+                       354,
+                       426
+                   ],
+        "bounds":  [
+                       53,
+                       26,
+                       278,
+                       334
+                   ],
+        "frame":  7
+    }
+]

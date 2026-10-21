@@ -20,9 +20,9 @@ import { SpriteConfig } from '../core/GameConfig';
 
 // Alpha >= 0.45 bounds measured by tools/audit-sprite-art.cjs.
 // One reference height per clip/direction preserves pose compression; never stretch each pose to full height.
-const RUN_HEIGHT = [320, 318, 300, 381];
-const RUN_FEET = [[352,368,384,369,352,369,384,368], [351,367,384,369,351,368,384,368],
-    [357,369,381,369,357,370,381,368], [393,389,389,393,382,385,391,391]];
+const RUN_HEIGHT = [336, 336, 336, 336];
+const RUN_FEET = [[360,360,360,360,360,360,360,360], [360,360,360,360,360,360,360,360],
+    [360,360,360,360,360,360,360,360], [360,360,360,360,360,360,360,360]];
 const RIN_HEIGHT = [304,303,295,289];
 const RIN_FEET = [[318,318,319,319],[305,305,306,305],[297,296,297,293],[295,295,295,295]];
 const ACTION_HEIGHT = [292,284,263,258];
@@ -298,7 +298,11 @@ export class WorldSpriteVisual implements CharacterVisual {
 
             this.state = this.action;
 
-        } else if (this.actionTime > 0) {
+        } else if (this.actionTime > 0 && !(this.running && this.action === 'shoot')) {
+
+            // The action sheet contains stationary full-body shooting poses.
+            // While moving, preserve the leg cycle; PlayerCombat still emits
+            // the shot, damage and tracer. Other actions keep their priority.
 
             this.state = this.action;
 
