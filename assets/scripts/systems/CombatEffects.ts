@@ -5,12 +5,28 @@ import { GeometryFactory } from '../levels/GeometryFactory';
 /** Fixed-size pool: no transient nodes or materials are allocated during combat. */
 export class CombatEffects {
     private pool: { node: Node; life: number }[] = [];
+    private bullets: { node: Node; from: PointXZ; to: PointXZ; distance: number; traveled: number }[] = [];
     private cursor = 0;
     constructor(parent: Node, private readonly geometry: GeometryFactory) {
         for (let i = 0; i < 32; i++) {
             const node = geometry.part(parent, 'Combat effect', '#FFE5A8', 0, 1, 0, 0.1, 0.1, 0.1);
             node.active = false; this.pool.push({ node, life: 0 });
         }
+        for (let i = 0; i < 12; i++) {
+            const node = geometry.part(parent, 'Bullet projectile', '#FFE5A8', 0, 1.05, 0, 0.07, 0.07, 0.28, true);
+            node.active = false;
+            this.bullets.push({ node, from: { x: 0, z: 0 }, to: { x: 0, z: 0 }, distance: 0, traveled: 0 });
+        }
+    }
+    bullet(a: PointXZ, b: PointXZ, color: string): void {
+        const dx = b.x - a.x, dz = b.z - a.z, distance = Math.hypot(dx, dz);
+        if (distance < 0.001) return;
+        const bullet = this.bullets[this.cursor++ % this.bullets.length];
+        bullet.from = { x: a.x, z: a.z }; bullet.to = { x: b.x, z: b.z };
+        bullet.distance = distance; bullet.traveled = 0;
+        bullet.node.active = true; bullet.node.setPosition(a.x, 1.05, a.z);
+        bullet.node.setRotationFromEuler(0, Math.atan2(dx, dz) * 180 / Math.PI, 0);
+        bullet.node.getComponent(MeshRenderer)!.setSharedMaterial(this.geometry.material(color, .45), 0);
     }
     line(a: PointXZ, b: PointXZ, color: string, duration = 0.09, width = 0.045): void {
         const effect = this.pool[this.cursor++ % this.pool.length]; effect.life = duration;
@@ -28,6 +44,21 @@ export class CombatEffects {
                 { x: p.x + Math.sin(b) * range, z: p.z + Math.cos(b) * range }, color, 0.18, 0.07);
         }
     }
-    tick(dt: number): void { for (const e of this.pool) if (e.life > 0) { e.life -= dt; if (e.life <= 0) e.node.active = false; } }
-    reset(): void { this.pool.forEach(e => { e.life = 0; e.node.active = false; }); }
+    tick(dt: number): void {
+        for (const e of this.pool) if (e.life > 0) { e.life -= dt; if (e.life <= 0) e.node.active = false; }
+        for (const bullet of this.bullets) if (bullet.node.active) {
+            bullet.traveled += 28 * dt;
+            if (bullet.traveled >= bullet.distance) { bullet.node.active = false; continue; }
+            const progress = bullet.traveled / bullet.distance;
+            bullet.node.setPosition(
+                bullet.from.x + (bullet.to.x - bullet.from.x) * progress,
+                1.05,
+                bullet.from.z + (bullet.to.z - bullet.from.z) * progress,
+            );
+        }
+    }
+    reset(): void {
+        this.pool.forEach(e => { e.life = 0; e.node.active = false; });
+        this.bullets.forEach(bullet => { bullet.traveled = 0; bullet.node.active = false; });
+    }
 }

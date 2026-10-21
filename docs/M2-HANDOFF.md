@@ -24,7 +24,7 @@ Mouse clicks on UI controls do not also shoot into the world. Each combat button
 ## Implemented systems
 
 - **Damage:** common `DamageHit`/`Damageable` interface and bounded `HealthState`, with duplicate-event rejection, hit protection, invulnerability and death rejection. Player health is clamped to 0–400.
-- **Pistol:** nearest live/active target within range and unobstructed XZ line of sight, repeat-fire cooldown, hitscan damage, facing assistance, recoil, muzzle flash, tracer and impact feedback.
+- **Pistol:** nearest live/active target within range and unobstructed XZ line of sight, repeat-fire cooldown, hitscan damage, facing assistance, recoil, muzzle flash, moving bullet visuals and impact feedback.
 - **Knife:** directional range/arc check, obstacle blocking, one hit per enemy per slash, cooldown, arm animation and seven-segment slash effect.
 - **Dodge:** current input direction or facing fallback, collision-aware 3.5m burst, bounded invulnerability, cooldown display and cyan trail feedback. Uses the existing movement solver.
 - **Enemies:** reusable `ZombieBase` component configured as Walker or Runner; separate silhouettes, speed/health differences, procedural movement/attack/hit/death feedback, and overhead health bars.
@@ -127,7 +127,7 @@ Use the exact build command in [M1-HANDOFF.md](M1-HANDOFF.md). RPK packaging is 
 
 No known blocking bug remains in the tested M2 scenarios. Physical-device multitouch, safe areas/notches, OS interruptions, Huawei runtime compatibility, mobile frame rate and thermals require device testing. Browser touch emulation is not physical-device validation. The scene still uses blockout models and simple effects; no final-art or publication-readiness claim is made.
 
-Navigation and line of sight intentionally use the arena's static axis-aligned XZ footprints. Future rotating/moving obstacles, slopes or new narrow passages need corresponding navigation/collision updates. Pistol tracers are cosmetic; gameplay damage is resolved by the tested hitscan/LOS path. Global player hit protection intentionally prevents several simultaneous enemy impacts from stacking instantly.
+Navigation and line of sight intentionally use the arena's static axis-aligned XZ footprints. Future rotating/moving obstacles, slopes or new narrow passages need corresponding navigation/collision updates. Pistol bullets are cosmetic and travel to the resolved shot endpoint; gameplay damage is still resolved immediately by the tested hitscan/LOS path. Global player hit protection intentionally prevents several simultaneous enemy impacts from stacking instantly.
 
 ## M3 integration points
 

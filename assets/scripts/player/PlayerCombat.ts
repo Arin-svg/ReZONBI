@@ -78,21 +78,21 @@ export class PlayerCombat extends Component {
             end = { x: target.position.x, z: target.position.z }; this.context.player.face(end.x - origin.x, end.z - origin.z);
             target.receiveDamage({ amount: C.pistolDamage * (rank >= 2 ? 1.25 : 1), id: this.context.nextHit(), source: 'Rin', kind: 'pistol' });
         } else {
-            // A miss still stops its tracer at solid geometry.
+            // A miss still stops its bullet at solid geometry.
             for (let step = 0.2; step <= C.pistolRange; step += 0.2) {
                 const p = { x: origin.x + this.node.forward.x * step, z: origin.z + this.node.forward.z * step };
                 if (!clearLine(origin, p, this.context.obstacles)) { end = p; break; }
             }
         }
-        this.context.effects.line(origin, end, '#FFE5A8');
-        // Independent assisted hitscan projectiles. Spread prefers distinct targets, then focuses the survivor.
+        this.context.effects.bullet(origin, end, '#FFE5A8');
+        // Independent assisted hitscan shots. Spread prefers distinct targets, then focuses the survivor.
         const used: ZombieBase[] = target ? [target] : [];
         for (let i = 0; i < (rank >= 3 ? 2 : rank ? 1 : 0); i++) {
             const candidates = this.context.enemies().filter(e => used.indexOf(e) < 0);
             const extra = nearestVisible(origin, candidates, C.pistolRange + (rank >= 5 ? 4 : 0), this.context.obstacles) ||
                 nearestVisible(origin, this.context.enemies(), C.pistolRange, this.context.obstacles);
             if (!extra) break;
-            used.push(extra); this.context.effects.line({ x: origin.x + (i ? -.18 : .18), z: origin.z }, extra.position, '#F6A4D7', .12);
+            used.push(extra); this.context.effects.bullet({ x: origin.x + (i ? -.18 : .18), z: origin.z }, extra.position, '#F6A4D7');
             extra.receiveDamage({ amount: C.pistolDamage * (rank >= 2 ? 1.25 : 1), id: this.context.nextHit(), source: 'Rin', kind: 'pistol' });
         }
         this.context.player.visual?.play('shoot', 0.16); return true;
