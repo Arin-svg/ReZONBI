@@ -82,7 +82,7 @@ Added developer tests: `tools/test-m2.cjs`, `tools/cdp-client.cjs`, `tools/brows
 | --- | --- |
 | TypeScript against installed Cocos 3.8.8 declarations | Pass |
 | Existing M1 logic checks | 8 passed |
-| M2 health, targeting, LOS, knife arc, invulnerability, navigation and tuning checks | 9 passed |
+| M2 health, targeting, LOS, knife arc, invulnerability, navigation, enemy health scaling and tuning checks | 10 passed |
 | Full M2 browser tests in generated web build | 31 passed |
 | Full M2 browser tests in Cocos Creator Preview (`localhost:7456`) | 29 passed |
 | Original M1 runtime regression in Creator Preview | Passed: movement, camera, collision, multitouch, drag/cancel, pause and HUD |

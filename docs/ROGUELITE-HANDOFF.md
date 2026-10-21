@@ -15,7 +15,7 @@ Controls: WASD/arrows or the existing joystick to move; hold J, left mouse over 
 - Level 1 start; thresholds `20 + 12*(level-1) + 4*(level-1)^2`; excess EXP carries over. Multiple pending upgrades are chosen in sequence. Invalid and maxed choices are excluded; when all six skills are maxed, selection is skipped without freezing the run.
 - Three randomized skill cards with category, current/next rank, and actual next-rank effect. Full-screen input blocking and cleared held inputs keep combat frozen until selection completes.
 - Capped, pooled continuous Walkers/Runners. Spawn candidates clear obstacles, are 7–15m from Rin, avoid occupied positions and require a navigation route. At most 24 ordinary infected nodes, plus one boss. Dead nodes finish their animation before recycling.
-- Pressure phases every 30 seconds: intervals 4/3/2/1.4/1.2 seconds, increasing Runner probability and HP/damage. Ordinary spawning stops at the boss unless noise is high; phase-two summons use the same cap.
+- Pressure phases every 30 seconds: intervals 4/3/2/1.4/1.2 seconds and increasing Runner probability. Newly spawned infected gain health continuously by 30% per minute, reaching a 2.5x cap at five minutes; phase-based damage scaling remains intact. Ordinary spawning stops at the boss unless noise is high; phase-two summons use the same cap and current survival-time health multiplier.
 - Noise pressure: pistol +8, knife +1, dodge +0.5, pulse +12; decay 5/sec. Local sounds send nearby idle/investigating enemies toward their origin. Runners hear farther. Pressure >=60 reduces spawn interval to 65%; noise cannot bypass the population cap.
 - Signal Tyrant: arrival grace, large original procedural silhouette, pulsing red core, health bar, two phases, locked slam/charge warnings, obstacle-aware movement, once-per-charge damage, capped summons, and 1.5x received damage during recovery. Below half HP, warning/recovery timing accelerates. Boss stun immunity preserves predictable telegraphs.
 - Pooled floating damage/healing/EXP text, crystal attraction/rotation, upgrade-panel entrance animation, recoil/slash/trail/hit/death feedback, and restrained neon building trim.
@@ -50,7 +50,7 @@ Browser tests use an isolated Chrome CDP instance, actual Cocos components, and 
 Executed successfully:
 
 - TypeScript check against installed Creator 3.8.8 declarations: passed.
-- `test-m1.cjs`: 8 passed; `test-m2.cjs`: 8 passed; `test-roguelite.cjs`: 6 passed (thresholds/excess EXP, invalid inputs, valid unique cards, maxed catalogue, reset and rank descriptions).
+- `test-m1.cjs`: 8 passed; `test-m2.cjs`: 10 passed; `test-roguelite.cjs`: 6 passed (thresholds/excess EXP, invalid inputs, valid unique cards, maxed catalogue, reset and rank descriptions).
 - `browser-roguelite.cjs`: 10 passed in the generated web build and Creator Preview (death drops, aggregation/collection, multi-level pause/resume, six skill effects and actual card touch).
 - `browser-survival.cjs`: 5 passed in web and Preview (safe/capped spawning, recycling, escalation, paused clock, defeat/reset).
 - `browser-boss.cjs`: 8 passed in web and Preview (quiet/loud hearing, pressure cadence/cap, timed boss arrival, slam escape/hit, recovery vulnerability, charge warning/one hit, phase-two summons, pause/death/victory/reset).

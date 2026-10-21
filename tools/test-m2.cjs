@@ -5,7 +5,7 @@ function load(file){file=path.resolve(file);if(cache.has(file))return cache.get(
 const {HealthState}=load('assets/scripts/systems/DamageSystem.ts');
 const {clearLine,inArc,nearestVisible,distance}=load('assets/scripts/systems/CombatMath.ts');
 const {ArenaNavigation}=load('assets/scripts/systems/ArenaNavigation.ts');
-const {CombatConfig:C}=load('assets/scripts/core/GameConfig.ts');
+const {CombatConfig:C,enemyHealthMultiplier}=load('assets/scripts/core/GameConfig.ts');
 let count=0;function check(name,fn){fn();console.log('PASS',name);count++;}
 const hit=(id,amount=24)=>({id,amount,source:'test',kind:'pistol'});
 check('Health clamps, rejects duplicate hits and dead targets',()=>{const h=new HealthState(50);assert.ok(h.damage(hit(1)));assert.equal(h.current,26);assert.ok(!h.damage(hit(1)));assert.ok(h.damage(hit(2,99)));assert.equal(h.current,0);assert.ok(!h.damage(hit(3)));h.reset();assert.equal(h.current,50);assert.ok(!h.damage(hit(4,NaN)));});
@@ -18,4 +18,5 @@ check('Knife range and swing are wider while keeping a directional rear guard',(
 check('A* routes around a solid wall with clearance on every segment',()=>{const nav=new ArenaNavigation(wall,.34),from={x:-4,z:0},to={x:4,z:0},route=nav.path(from,to);assert.ok(route.length>2);let prev=from;for(const p of route){assert.ok(clearLine(prev,p,wall,.34));prev=p;}assert.ok(distance(prev,to)<.01);assert.ok(route.some(p=>Math.abs(p.z)>3.34));});
 check('Navigation handles an unreachable enclosed destination',()=>{const box=[{x:0,z:-2,halfX:2,halfZ:.3},{x:0,z:2,halfX:2,halfZ:.3},{x:-2,z:0,halfX:.3,halfZ:2},{x:2,z:0,halfX:.3,halfZ:2}];const nav=new ArenaNavigation(box,.34);assert.equal(nav.path({x:-5,z:0},{x:0,z:0}).length,0);});
 check('Combat budget and enemy tuning remain coherent',()=>{assert.equal(C.maxEnemies,5);assert.ok(C.runner.speed>C.walker.speed);assert.ok(C.runner.hp<C.walker.hp);assert.ok(C.dodgeInvulnerability<=C.dodgeDuration);assert.equal(C.pistolDamage,24);assert.equal(C.knifeDamage,40);});
+check('New infected gain health continuously over time and have a firm cap',()=>{assert.equal(enemyHealthMultiplier(-60),1);assert.equal(enemyHealthMultiplier(0),1);assert.equal(enemyHealthMultiplier(30),1.15);assert.equal(enemyHealthMultiplier(120),1.6);assert.equal(enemyHealthMultiplier(240),2.2);assert.equal(enemyHealthMultiplier(300),2.5);assert.equal(enemyHealthMultiplier(900),2.5);});
 console.log(`${count} M2 logic checks passed; runtime components are checked separately.`);

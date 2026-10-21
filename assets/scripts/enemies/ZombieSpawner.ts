@@ -1,5 +1,5 @@
 import { Node } from 'cc';
-import { CombatConfig as C, SurvivalConfig as S } from '../core/GameConfig';
+import { CombatConfig as C, enemyHealthMultiplier, SurvivalConfig as S } from '../core/GameConfig';
 import { overlaps, PointXZ } from '../core/MovementMath';
 import { GeometryFactory } from '../levels/GeometryFactory';
 import { distance } from '../systems/CombatMath';
@@ -16,7 +16,7 @@ export class ZombieSpawner {
         this.reset();
     }
     get alive(): number { return this.enemies.filter(e => e.active && !e.dead).length; }
-    private create(kind: ZombieKind, p: PointXZ, strength = 1): ZombieBase | null {
+    private create(kind: ZombieKind, p: PointXZ, healthMultiplier = 1, damageMultiplier = 1): ZombieBase | null {
         if (this.alive >= S.maxEnemies) return null;
         let enemy = this.enemies.find(e => !e.node.active && e.kind === kind);
         if (!enemy && this.enemies.length < S.maxEnemies) {
@@ -26,7 +26,7 @@ export class ZombieSpawner {
         // Preserve the node budget even when the available pool has a different mix.
         if (!enemy) enemy = this.enemies.find(e => !e.node.active);
         if (!enemy) return null;
-        enemy.reset(p, strength); enemy.investigate(this.context.player.position); return enemy;
+        enemy.reset(p, healthMultiplier, damageMultiplier); enemy.investigate(this.context.player.position); return enemy;
     }
     spawn(elapsed: number, random: () => number = Math.random): ZombieBase | null {
         if (this.alive >= S.maxEnemies) return null;
@@ -36,7 +36,12 @@ export class ZombieSpawner {
             const p = this.candidates[(start + i) % this.candidates.length], d = distance(p, this.context.player.position);
             if (d < S.minSpawnDistance || d > S.maxSpawnDistance || this.enemies.some(e => e.active && !e.dead && distance(e.position, p) < 1.2)) continue;
             if (!this.context.navigation.path(p, this.context.player.position).length) continue;
-            return this.create(random() < S.runnerChances[phase] ? 'runner' : 'walker', p, 1 + phase * .15);
+            return this.create(
+                random() < S.runnerChances[phase] ? 'runner' : 'walker',
+                p,
+                enemyHealthMultiplier(elapsed),
+                1 + phase * .15,
+            );
         }
         return null;
     }

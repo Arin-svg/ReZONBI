@@ -23,9 +23,17 @@ export const Palette = {
 export const SurvivalConfig = {
     bossTime: 120, maxEnemies: 24, phaseSeconds: 30,
     spawnIntervals: [4, 3, 2, 1.4, 1.2], runnerChances: [.1, .25, .4, .5, .55],
+    enemyHealthPerMinute: .3, maxEnemyHealthMultiplier: 2.5,
     minSpawnDistance: 7, maxSpawnDistance: 15,
     walkerXP: 5, runnerXP: 8, bossXP: 100,
 };
+
+export function enemyHealthMultiplier(elapsed: number): number {
+    return Math.min(
+        SurvivalConfig.maxEnemyHealthMultiplier,
+        1 + Math.max(0, elapsed) / 60 * SurvivalConfig.enemyHealthPerMinute,
+    );
+}
 
 export const CombatConfig = {
     maxHP: 400, hitProtection: 0.35,
