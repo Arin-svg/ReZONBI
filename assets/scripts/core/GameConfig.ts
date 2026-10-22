@@ -27,6 +27,11 @@ export const SurvivalConfig = {
     walkerXP: 5, runnerXP: 8, bossXP: 100,
 };
 
+/** Spawn health grows 30% per minute, capped at 2.5x after five minutes. */
+export function enemyHealthMultiplier(elapsed: number): number {
+    return 1 + Math.min(1.5, Math.max(0, elapsed) * .005);
+}
+
 export const CombatConfig = {
     maxHP: 400, hitProtection: 0.35,
     pistolDamage: 24, pistolInterval: 0.25, pistolRange: 12,

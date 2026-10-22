@@ -3,8 +3,10 @@ Signal Tyrant key artwork
 File: signal-tyrant-key-art.png
 Generated with the built-in image_gen tool on 2026-10-22.
 Design guidance: docs/reference/Re_ZONBI Enemy Design Codex.png.
-Transparent single-pose artwork; not an animation atlas. Runtime integration
-is not included: SignalTyrant.ts still renders its procedural geometry.
+Transparent single-pose artwork; not an animation atlas. Main.scene assigns
+this texture through GameBootstrap.bossArtwork. SignalTyrant displays it as a
+camera-facing world sprite, with damage tint, death scaling, and reset support.
+The procedural geometry remains a fallback when no boss texture is assigned.
 
 Generation prompt:
 Use case: stylized-concept.

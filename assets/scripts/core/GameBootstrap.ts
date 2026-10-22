@@ -58,6 +58,9 @@ export class GameBootstrap extends Component {
     @property(Texture2D)
     infectedAtlas: Texture2D | null = null;
 
+    @property(Texture2D)
+    bossArtwork: Texture2D | null = null;
+
     @property(EffectAsset)
     spriteEffect: EffectAsset | null = null;
 
@@ -266,7 +269,8 @@ export class GameBootstrap extends Component {
             this.geometry.spriteAssets = {
                 camera: cameraNode,
                 effect: this.spriteEffect,
-                infected: this.infectedAtlas
+                infected: this.infectedAtlas,
+                boss: this.bossArtwork ?? undefined
             };
         }
 

@@ -372,7 +372,7 @@ export class WorldSpriteVisual implements CharacterVisual {
             column;
 
         const nextFrame =
-            useRunAtlas
+            this.kind === 'boss' ? 0 : useRunAtlas
                 ? runFrame
                 : atlasFrame;
 
@@ -408,7 +408,11 @@ export class WorldSpriteVisual implements CharacterVisual {
             let top: number;
             let bottom: number;
 
-            if (useRunAtlas) {
+            if (this.kind === 'boss') {
+                // Boss key art is one full image, not the infected atlas.
+                left = top = 0;
+                right = bottom = 1;
+            } else if (useRunAtlas) {
 
                 // Eight equal-width frames in one row.
                 left = runFrame / 8;
@@ -469,11 +473,11 @@ export class WorldSpriteVisual implements CharacterVisual {
 
             // Restore source aspect ratio and account for transparent padding.
             // Actions retain their crouched/dead heights relative to a standing pose.
-            const referenceHeight = useRunAtlas ? RUN_HEIGHT[this.direction]
+            const referenceHeight = this.kind === 'boss' ? selectedTexture.height : useRunAtlas ? RUN_HEIGHT[this.direction]
                 : useAction ? ACTION_HEIGHT[this.direction]
                 : this.kind === 'rin' ? RIN_HEIGHT[this.direction]
                 : ENEMY_HEIGHT[this.kind === 'runner' ? 1 : 0][this.direction];
-            const feet = useRunAtlas ? RUN_FEET[this.direction][runFrame]
+            const feet = this.kind === 'boss' ? selectedTexture.height : useRunAtlas ? RUN_FEET[this.direction][runFrame]
                 : useAction ? ACTION_FEET[this.direction][column]
                 : this.kind === 'rin' ? RIN_FEET[this.direction][column]
                 : ENEMY_FEET[this.direction][column];
@@ -482,7 +486,7 @@ export class WorldSpriteVisual implements CharacterVisual {
             this.width = pixelWidth / referenceHeight * this.size;
             this.height = pixelHeight / referenceHeight * this.size;
             // Non-running cells have a one-pixel inset on each edge.
-            this.footPadding = Math.max(0, pixelHeight - feet + (useRunAtlas ? 0 : 1))
+            this.footPadding = Math.max(0, pixelHeight - feet + (useRunAtlas || this.kind === 'boss' ? 0 : 1))
                 / referenceHeight * this.size;
         }
 

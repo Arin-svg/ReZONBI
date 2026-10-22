@@ -6,6 +6,7 @@ import { ArenaNavigation } from '../systems/ArenaNavigation';
 import { clearLine, distance } from '../systems/CombatMath';
 import { DamageHit, HealthState } from '../systems/DamageSystem';
 import { ZombieBase, ZombieContext } from './ZombieBase';
+import { WorldSpriteVisual } from '../player/WorldSpriteVisual';
 const { ccclass } = _decorator;
 type BossStage = 'arrival' | 'approach' | 'slamWarning' | 'chargeWarning' | 'charge' | 'recovery';
 
@@ -28,6 +29,7 @@ export class SignalTyrant extends ZombieBase {
     private turns = 0;
     private plates: Node[] = [];
     private geometry!: GeometryFactory;
+    private bossSprite: WorldSpriteVisual | null = null;
     summon: () => void = () => {};
     initializeBoss(p: PointXZ, context: ZombieContext, g: GeometryFactory): void {
         this.bossContext = context; this.nav = new ArenaNavigation(context.obstacles, .95);
@@ -53,6 +55,11 @@ export class SignalTyrant extends ZombieBase {
             g.part(this.body, 'Heavy leg', '#292536', side * .48, .45, .1, .6, .9, .7);
             g.part(this.body, 'Antenna growth', '#D84A63', side * .6, 2.65, .3, .12, 1.2, .12);
         }
+        if (g.spriteAssets?.boss) {
+            const a = g.spriteAssets;
+            this.bossSprite = new WorldSpriteVisual(this.node, a.camera, a.boss!, a.effect, 'boss');
+            this.body.active = false;
+        }
         // Warnings are children of the arena root so facing changes cannot move a locked telegraph.
         this.warning = g.form(this.node.parent!, 'Tyrant slam telegraph', '#FF528A', 0, .09, 0, 6.4, 1, 6.4, 'ring'); g.glow(this.warning, '#FF528A', .7);
         this.lane = g.part(this.node.parent!, 'Tyrant charge telegraph', '#D84A63', 0, .1, 0, 1.8, .025, 8);
@@ -62,11 +69,14 @@ export class SignalTyrant extends ZombieBase {
         super.reset(p); this.health = new HealthState(1800); this.stage = 'arrival'; this.phase = 1; this.timer = 2;
         this.turns = this.repathTime = 0; this.route = []; this.attacked = false;
         if (this.body) this.body.setRotationFromEuler(0, 0, 0);
+        this.bossSprite?.reset();
         if (this.warning) this.warning.active = this.lane.active = false;
     }
     receiveDamage(hit: DamageHit): boolean {
         if (!this.active || this.stage === 'arrival') return false;
-        return super.receiveDamage({ ...hit, amount: hit.amount * (this.stage === 'recovery' ? 1.5 : 1) });
+        const received = super.receiveDamage({ ...hit, amount: hit.amount * (this.stage === 'recovery' ? 1.5 : 1) });
+        if (received) this.bossSprite?.play(this.dead ? 'die' : 'hurt', this.dead ? .7 : .12);
+        return received;
     }
     stun(_duration: number): void { /* Heavy boss resists stun; its recovery window stays predictable. */ }
     investigate(_p: PointXZ): void { /* Boss already tracks Rin. */ }
@@ -75,6 +85,8 @@ export class SignalTyrant extends ZombieBase {
         this.warning.active = this.lane.active = false;
         this.body.setRotationFromEuler(Math.min(88, this.body.eulerAngles.x + dt * 120), 0, 0);
         super.tickDeath(dt);
+        this.bossSprite?.play('die', .7);
+        this.bossSprite?.animate(dt, 0);
     }
     tick(dt: number): void {
         if (!this.active) return;
@@ -133,4 +145,9 @@ export class SignalTyrant extends ZombieBase {
         return moved;
     }
     hide(): void { this.node.active = false; this.warning.active = this.lane.active = false; }
+    lateUpdate(dt: number): void {
+        // Keep the billboard aligned after boss movement and camera updates.
+        if (this.node.active && !this.dead) this.bossSprite?.animate(dt, 0);
+    }
+    onDestroy(): void { this.bossSprite?.destroy(); super.onDestroy(); }
 }
