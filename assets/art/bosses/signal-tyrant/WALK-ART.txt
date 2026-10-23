@@ -1,0 +1,26 @@
+Signal Tyrant walking artwork
+
+signal-tyrant-walk.png: eight poses, four columns by two rows, 1774x887 RGBA.
+Generated with built-in image_gen from signal-tyrant-key-art.png.
+Single front three-quarter view; this is not a four-direction animation set.
+AI-generated frames retain some shape variation between poses.
+
+Integration: Main.scene -> GameBootstrap.bossWalkAtlas -> SignalTyrant ->
+WorldSpriteVisual. Eight FPS at walking speed; charge cadence capped at 1.8x.
+Actual displacement advances the walk clock. Stationary uses frame zero.
+Simulation pause freezes playback. Damage tint, death and restart are retained.
+Measured column cuts: 0,449,908,1340,1774; row cuts: 0,444,887.
+Reference height: 400 pixels. Foot baselines in local cells:
+431,431,429,430,411,413,411,413 (alpha threshold 115/255).
+
+Validation: tools/test-tyrant-walk.cjs executes actual animation source with a
+minimal render API fixture. TypeScript checked with skipLibCheck. Live Cocos
+rendering has not been verified in this session (no running preview).
+
+Generation prompt:
+Use case: stylized-concept. Transform the referenced Signal Tyrant character artwork into a production walking animation sprite sheet. Reference is identity and art style anchor: preserve pale bone/lavender jagged crystal armor, black understructure, hot magenta chest core, crown spines, two massive arms with claws and two heavy legs.
+Output a transparent PNG sprite sheet with EXACTLY 8 frames arranged in a precise 4-column by 2-row grid of equal square cells, read left to right then top to bottom. Wide 2:1 canvas. Each cell contains exactly one entire full body of the same boss at the same scale, centered at the same local horizontal position, same planted foot baseline near 94% of the cell height. Keep all spines and claws within each cell with transparent gutters. No lines, labels, numbers, shadows, ground, or background.
+All 8 frames share the reference front three-quarter camera angle, facing slightly screen right, with no turning. Show a continuous heavy bipedal WALK IN PLACE with clearly different sequential leg poses: 1 left foot forward contact and right back, 2 down weight transfer, 3 right leg passing lifted, 4 right leg reaching, 5 right foot forward contact and left back, 6 down weight transfer opposite, 7 left leg passing lifted, 8 left leg reaching into frame 1. Arms counter-swing subtly; massive armor remains rigid, not morphing. Clear alternating steps, soles planted during contact; slight natural weight shifts. Do not repeat eight static poses. Maintain consistent proportions, crystal arrangement and lighting across frames. Crisp anime game sprite illustration matching reference. Actual alpha transparency, no checkerboard.
+
+Layout correction prompt:
+Correct eight-frame sheet to 4x2 equal cells, centered full bodies with 10% transparent margins, consistent scale and feet at 90% cell height; preserve poses and identity.

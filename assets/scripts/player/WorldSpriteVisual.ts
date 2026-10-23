@@ -74,6 +74,7 @@ export class WorldSpriteVisual implements CharacterVisual {
     private footPadding = 0;
 
     private age = 0;
+    private bossWalkTime = 0;
     private running = false;
 
     private actionTime = 0;
@@ -93,6 +94,7 @@ export class WorldSpriteVisual implements CharacterVisual {
         private runFrontAtlas: Texture2D | null = null,
         private runBackAtlas: Texture2D | null = null,
         private runLeftAtlas: Texture2D | null = null,
+        private bossWalkAtlas: Texture2D | null = null,
     ) {
 
         const nodeName =
@@ -230,6 +232,7 @@ export class WorldSpriteVisual implements CharacterVisual {
         this.terminal = false;
 
         this.age = 0;
+        this.bossWalkTime = 0;
         this.running = false;
 
         this.frame = -1;
@@ -249,6 +252,9 @@ export class WorldSpriteVisual implements CharacterVisual {
         const delta = Math.max(0, dt);
 
         this.age += delta;
+        if (this.kind === 'boss' && moving > .04 && !this.terminal) {
+            this.bossWalkTime += delta * Math.min(1.8, moving / 2.1);
+        }
 
         this.actionTime = Math.max(
             0,
@@ -371,13 +377,15 @@ export class WorldSpriteVisual implements CharacterVisual {
             (useAction ? 5 : 4) +
             column;
 
+        const useBossWalk = this.kind === 'boss' && this.bossWalkAtlas !== null;
+        const bossFrame = this.running && !this.terminal ? Math.floor(this.bossWalkTime * 8) % 8 : 0;
         const nextFrame =
-            this.kind === 'boss' ? 0 : useRunAtlas
+            this.kind === 'boss' ? (useBossWalk ? bossFrame : 0) : useRunAtlas
                 ? runFrame
                 : atlasFrame;
 
         const nextTextureKey =
-            useAction
+            useBossWalk ? 'boss-walk' : useAction
                 ? 'actions'
                 : useRunAtlas
                     ? `run-${this.direction}`
@@ -393,7 +401,7 @@ export class WorldSpriteVisual implements CharacterVisual {
             this.textureKey = nextTextureKey;
 
             const selectedTexture =
-                useAction
+                useBossWalk ? this.bossWalkAtlas! : useAction
                     ? this.actions!
                     : useRunAtlas
                         ? runAtlas!
@@ -409,9 +417,19 @@ export class WorldSpriteVisual implements CharacterVisual {
             let bottom: number;
 
             if (this.kind === 'boss') {
-                // Boss key art is one full image, not the infected atlas.
-                left = top = 0;
-                right = bottom = 1;
+                if (useBossWalk) {
+                    // Measured transparent gutters in the generated 1774x887 sheet.
+                    const columns = [0, 449, 908, 1340, 1774];
+                    const rows = [0, 444, 887];
+                    const c = bossFrame % 4, r = Math.floor(bossFrame / 4);
+                    left = columns[c] / selectedTexture.width;
+                    right = columns[c + 1] / selectedTexture.width;
+                    top = rows[r] / selectedTexture.height;
+                    bottom = rows[r + 1] / selectedTexture.height;
+                } else {
+                    left = top = 0;
+                    right = bottom = 1;
+                }
             } else if (useRunAtlas) {
 
                 // Eight equal-width frames in one row.
@@ -473,11 +491,11 @@ export class WorldSpriteVisual implements CharacterVisual {
 
             // Restore source aspect ratio and account for transparent padding.
             // Actions retain their crouched/dead heights relative to a standing pose.
-            const referenceHeight = this.kind === 'boss' ? selectedTexture.height : useRunAtlas ? RUN_HEIGHT[this.direction]
+            const referenceHeight = this.kind === 'boss' ? (useBossWalk ? 400 : selectedTexture.height) : useRunAtlas ? RUN_HEIGHT[this.direction]
                 : useAction ? ACTION_HEIGHT[this.direction]
                 : this.kind === 'rin' ? RIN_HEIGHT[this.direction]
                 : ENEMY_HEIGHT[this.kind === 'runner' ? 1 : 0][this.direction];
-            const feet = this.kind === 'boss' ? selectedTexture.height : useRunAtlas ? RUN_FEET[this.direction][runFrame]
+            const feet = this.kind === 'boss' ? (useBossWalk ? [431,431,429,430,411,413,411,413][bossFrame] : selectedTexture.height) : useRunAtlas ? RUN_FEET[this.direction][runFrame]
                 : useAction ? ACTION_FEET[this.direction][column]
                 : this.kind === 'rin' ? RIN_FEET[this.direction][column]
                 : ENEMY_FEET[this.direction][column];

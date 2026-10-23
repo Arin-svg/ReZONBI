@@ -8,6 +8,9 @@ this texture through GameBootstrap.bossArtwork. SignalTyrant displays it as a
 camera-facing world sprite, with damage tint, death scaling, and reset support.
 The procedural geometry remains a fallback when no boss texture is assigned.
 
+Walking is now supplied by signal-tyrant-walk.png and wired through
+GameBootstrap.bossWalkAtlas. See WALK-ART.txt for frame layout and prompts.
+
 Generation prompt:
 Use case: stylized-concept.
 Asset type: transparent full-body game character artwork for Re:ZONBI, Signal Tyrant final boss.

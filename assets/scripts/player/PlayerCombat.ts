@@ -3,7 +3,7 @@ import { CombatConfig as C } from '../core/GameConfig';
 import { Obstacle } from '../core/MovementMath';
 import { ZombieBase } from '../enemies/ZombieBase';
 import { CombatEffects } from '../systems/CombatEffects';
-import { clearLine, inArc, nearestVisible } from '../systems/CombatMath';
+import { clearLine, distance, nearestVisible } from '../systems/CombatMath';
 import { PlayerController } from './PlayerController';
 import { PlayerHealth } from './PlayerHealth';
 import { SkillId } from '../systems/Progression';
@@ -103,7 +103,7 @@ export class PlayerCombat extends Component {
         this.context.onAction?.('knife');
         const origin = this.node.position, facing = this.node.forward, id = this.context.nextHit();
         for (const enemy of this.context.enemies()) if (!enemy.dead && enemy.active &&
-            inArc(origin, facing, enemy.position, C.knifeRange, C.knifeArc) && clearLine(origin, enemy.position, this.context.obstacles)) {
+            distance(origin, enemy.position) <= C.knifeRange && clearLine(origin, enemy.position, this.context.obstacles)) {
             enemy.receiveDamage({ amount: C.knifeDamage, id, source: 'Rin', kind: 'knife' });
         }
         this.context.effects.knifeSlash(origin, facing, C.knifeRange, C.knifeArc); this.context.player.visual?.play('slash', 0.36); return true;

@@ -35,7 +35,8 @@ export function enemyHealthMultiplier(elapsed: number): number {
 export const CombatConfig = {
     maxHP: 400, hitProtection: 0.35,
     pistolDamage: 24, pistolInterval: 0.25, pistolRange: 12,
-    knifeDamage: 40, knifeRange: 2.2, knifeCooldown: 0.6, knifeArc: 110,
+    // Active area-slash skill: every visible enemy around Rin, once per cast.
+    knifeDamage: 100, knifeRange: 3.2, knifeCooldown: 15, knifeArc: 360,
     dodgeDistance: 3.5, dodgeDuration: 0.25, dodgeCooldown: 3, dodgeInvulnerability: 0.25,
     enemyRadius: 0.34, maxEnemies: 5, repathInterval: 0.5,
     walker: { hp: 80, speed: 2, damage: 15, range: 1.4, cooldown: 1.5, detection: 8, windup: 0.38 },

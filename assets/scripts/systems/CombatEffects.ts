@@ -30,7 +30,7 @@ export class CombatEffects {
         }
         const colors = ['#FF4F97', '#FFF0F8'];
         for (let layer = 0; layer < colors.length; layer++) {
-            for (let index = 0; index < 12; index++) {
+            for (let index = 0; index < 24; index++) {
                 const node = geometry.part(parent, 'Knife slash ribbon', colors[layer], 0, .52, 0, .14, .045, .1);
                 node.active = false;
                 node.getComponent(MeshRenderer)!.setSharedMaterial(geometry.material(colors[layer], layer ? 1.1 : .8), 0);
@@ -79,16 +79,15 @@ export class CombatEffects {
         this.updateKnifeSlash(0);
     }
     private updateKnifeSlash(progress: number): void {
-        const count = 12;
+        const count = 24;
         for (const segment of this.knifeSegments) {
             const portion = (segment.index + .5) / count;
             if (progress <= 0 || portion > progress) { segment.node.active = false; continue; }
             segment.node.active = true;
-            const sweep = segment.arc * progress;
-            const angle = segment.angle - segment.arc / 2 + sweep * portion;
+            const angle = segment.angle - segment.arc / 2 + segment.arc * portion;
             const layerScale = segment.layer ? .82 : 1;
-            const radius = segment.range * (.46 + .54 * progress) * layerScale;
-            const halfSegment = Math.max(.001, sweep / count / 2);
+            const radius = segment.range * layerScale;
+            const halfSegment = Math.max(.001, segment.arc / count / 2);
             const a = angle - halfSegment, b = angle + halfSegment;
             const ax = segment.origin.x + Math.sin(a) * radius;
             const az = segment.origin.z + Math.cos(a) * radius;
@@ -113,12 +112,13 @@ export class CombatEffects {
             );
         }
         if (this.knifeActive) {
-            this.knifeProgress += dt / .24;
+            this.knifeProgress += dt / .36;
             if (this.knifeProgress >= 1) {
                 this.knifeActive = false;
                 this.knifeSegments.forEach(segment => { segment.node.active = false; });
             } else {
-                this.updateKnifeSlash(this.knifeProgress);
+                // Finish the full circle, then hold it briefly before clearing.
+                this.updateKnifeSlash(Math.min(1, this.knifeProgress / .65));
             }
         }
     }

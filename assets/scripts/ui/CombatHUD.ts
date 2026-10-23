@@ -69,7 +69,7 @@ export class CombatHUD {
         const title = label(this.result, 'Result title', '', 450, 100, 34); title.setPosition(0, 48, 0); this.resultTitle = title.getComponentInChildren(Label)!;
         const replay = label(this.result, 'Replay button', 'RESTART ENCOUNTER', 340, 68, 24); panel(replay, 340, 68); replay.setPosition(0, -60, 0);
         this.bind(replay, () => encounter.restart()); this.result.active = false;
-        this.guide = label(safe, 'Combat controls guide', 'MOVE  WASD / arrows\nFIRE  J / mouse    KNIFE  K\nDODGE  Space    PAUSE  Esc', 360, 86, 17);
+        this.guide = label(safe, 'Combat controls guide', 'MOVE  WASD / arrows\nFIRE  J / mouse    SLASH  K (15s)\nDODGE  Space    PAUSE  Esc', 360, 86, 17);
         panel(this.guide, 360, 86); const guideWidget = this.guide.addComponent(Widget);
         guideWidget.isAlignHorizontalCenter = true; guideWidget.isAlignBottom = true; guideWidget.bottom = 52; guideWidget.alignMode = Widget.AlignMode.ALWAYS;
         for (let i = 0; i < Skills.length; i++) {
@@ -125,7 +125,8 @@ export class CombatHUD {
             this.healthFill.fillColor = new Color(213, 106, 145); this.healthFill.rect(-100, -5, 200 * hp.current / hp.maximum, 10); this.healthFill.fill();
         }
         text(this.count, `HORDE  ${Math.floor(e.elapsed / 60)}:${('0' + Math.floor(e.elapsed % 60)).slice(-2)}\nINFECTED  ${e.spawner.alive}`);
-        text(this.knife, e.combat.knifeCooldown > 0 ? `${e.combat.knifeCooldown.toFixed(1)}s` : 'K');
+        text(this.knife, e.combat.knifeCooldown > 1e-6 ? `${Math.ceil(e.combat.knifeCooldown)}s` : 'SLASH / K');
+        this.knife.color = e.combat.knifeCooldown > 1e-6 ? new Color(130,125,148) : new Color(255,171,214);
         text(this.dodge, e.combat.dodgeCooldown > 0 ? `${e.combat.dodgeCooldown.toFixed(1)}s` : 'SPACE');
         this.pistol.color = e.combat.firing ? new Color(213, 106, 145) : new Color(232, 226, 226);
         text(this.pause, ''); if (e.paused !== this.lastPaused) { this.lastPaused = e.paused; this.pauseIcon.destroy(); this.pauseIcon = icon(this.pause.node.parent!, e.paused ? 'play' : 'pause', 30); } this.pausedHint.active = e.paused;

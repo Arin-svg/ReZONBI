@@ -61,6 +61,9 @@ export class GameBootstrap extends Component {
     @property(Texture2D)
     bossArtwork: Texture2D | null = null;
 
+    @property(Texture2D)
+    bossWalkAtlas: Texture2D | null = null;
+
     @property(EffectAsset)
     spriteEffect: EffectAsset | null = null;
 
@@ -226,10 +229,6 @@ export class GameBootstrap extends Component {
 
         tracking.target = rin;
 
-        tracking.buildings = arena.children.filter(
-            node => node.name === 'Building facade'
-        );
-
         // ------------------------------------
         // 8. Create exploration HUD
         // IMPORTANT: Use sceneRoot, not GameManager
@@ -266,11 +265,16 @@ export class GameBootstrap extends Component {
 
         if (this.infectedAtlas && this.spriteEffect) {
 
+            if (this.bossArtwork && !this.bossWalkAtlas) {
+                console.warn('Signal Tyrant walking texture is missing. Assign signal-tyrant-walk.png (Texture2D) to GameManager > GameBootstrap > Boss Walk Atlas and save Main.scene.');
+            }
+
             this.geometry.spriteAssets = {
                 camera: cameraNode,
                 effect: this.spriteEffect,
                 infected: this.infectedAtlas,
-                boss: this.bossArtwork ?? undefined
+                boss: this.bossArtwork ?? undefined,
+                bossWalk: this.bossWalkAtlas ?? undefined
             };
         }
 

@@ -158,6 +158,10 @@
       "__uuid__": "0843be01-479f-4229-8e07-9860192a3bd3@6c48a",
       "__expectedType__": "cc.Texture2D"
     },
+    "bossWalkAtlas": {
+      "__uuid__": "3de8c875-d25f-497d-a75f-041800d18e6c@6c48a",
+      "__expectedType__": "cc.Texture2D"
+    },
     "spriteEffect": {
       "__uuid__": "a3cd009f-0ab0-420d-9278-b9fdab939bbc",
       "__expectedType__": "cc.EffectAsset"
@@ -384,6 +388,10 @@
     },
     "bossArtwork": {
       "__uuid__": "0843be01-479f-4229-8e07-9860192a3bd3@6c48a",
+      "__expectedType__": "cc.Texture2D"
+    },
+    "bossWalkAtlas": {
+      "__uuid__": "3de8c875-d25f-497d-a75f-041800d18e6c@6c48a",
       "__expectedType__": "cc.Texture2D"
     },
     "spriteEffect": {

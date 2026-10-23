@@ -1,11 +1,13 @@
-import { Color, EffectAsset, Material, MeshRenderer, Node, primitives, Texture2D, utils, Vec3 } from 'cc';
+import { Color, EffectAsset, Material, Mesh, MeshRenderer, Node, primitives, Texture2D, utils, Vec3 } from 'cc';
 
 /** One shared unit mesh per shape and one material per colour; no external assets. */
 export class GeometryFactory {
-    spriteAssets: {camera:Node; effect:EffectAsset; infected:Texture2D; boss?:Texture2D} | null = null;
+    spriteAssets: {camera:Node; effect:EffectAsset; infected:Texture2D; boss?:Texture2D; bossWalk?:Texture2D} | null = null;
     private readonly boxMesh = utils.createMesh(primitives.box());
     private readonly sphereMesh = utils.createMesh(primitives.sphere(0.5, { segments: 10 }));
     private readonly materials = new Map<string, Material>();
+    private readonly customMeshes: Mesh[] = [];
+    ownMesh(mesh: Mesh): Mesh { this.customMeshes.push(mesh); return mesh; }
     private readonly shapes = {
         taper: utils.createMesh(primitives.cylinder(.5, .34, 1, { radialSegments: 8 })),
         cone: utils.createMesh(primitives.cylinder(0, .5, 1, { radialSegments: 6 })),
@@ -37,6 +39,27 @@ export class GeometryFactory {
         }
         return material;
     }
+    texturedMaterial(texture: Texture2D, emission = 0, tint = '#FFFFFF'): Material {
+        const key = `texture:${texture.uuid}:${emission}:${tint}`;
+        let material = this.materials.get(key);
+        if (!material) {
+            material = new Material();
+            material.initialize({ effectAsset: this.surfaceEffect, defines: {
+                USE_ALBEDO_MAP: true, USE_EMISSIVE_MAP: emission > 0,
+            }});
+            material.setProperty('albedo', new Color().fromHEX(tint));
+            material.setProperty('albedoMap', texture);
+            material.setProperty('roughness', .82);
+            material.setProperty('metallic', .04);
+            if (emission > 0) {
+                material.setProperty('emissiveMap', texture);
+                material.setProperty('emissive', new Color(255,255,255));
+                material.setProperty('emissiveScale', new Vec3(emission,emission,emission));
+            }
+            this.materials.set(key, material);
+        }
+        return material;
+    }
     glow(node: Node, color: string, emission = .3): void {
         const renderer = node.getComponent(MeshRenderer)!;
         const material = this.material(color, emission);
@@ -47,6 +70,7 @@ export class GeometryFactory {
         node.getComponent(MeshRenderer)!.mesh = this.shapes[shape]; return node;
     }
     destroy(): void {
+        this.customMeshes.forEach(mesh => mesh.destroy());
         this.materials.forEach(m => m.destroy());
         this.boxMesh.destroy();
         this.sphereMesh.destroy();

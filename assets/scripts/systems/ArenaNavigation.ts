@@ -13,12 +13,18 @@ export class ArenaNavigation {
     }
     path(from: PointXZ, to: PointXZ): PointXZ[] {
         if (clearLine(from, to, this.obstacles, this.radius + 0.04)) return [{ x: to.x, z: to.z }];
-        const closest = (p: PointXZ) => {
+        const closest = (p: PointXZ, clearance = this.radius) => {
             let best = -1, min = Infinity;
-            this.cells.forEach((c, i) => { const d = distance(p, c); if (this.open[i] && d < min && clearLine(p, c, this.obstacles, this.radius)) { best = i; min = d; } });
+            this.cells.forEach((c, i) => { const d = distance(p, c); if (this.open[i] && d < min && clearLine(p, c, this.obstacles, clearance)) { best = i; min = d; } });
             return best;
         };
-        const start = closest(from), end = closest(to);
+        const start = closest(from);
+        let end = closest(to);
+        const exactTargetReachable = end >= 0;
+        // Rin's smaller collision circle can stand closer to a wall than an
+        // infected (or Tyrant). Approach a clear grid cell on her side of the
+        // wall instead of discarding the entire route to that destination.
+        if (end < 0) end = closest(to, 0);
         if (start < 0 || end < 0) return [];
         const todo = [start], cost = new Map<number, number>([[start, 0]]), came = new Map<number, number>(), closed = new Set<number>();
         while (todo.length) {
@@ -29,7 +35,9 @@ export class ArenaNavigation {
             if (current === end) {
                 const result: PointXZ[] = []; let cursor = end;
                 while (cursor !== start) { result.unshift(this.cells[cursor]); cursor = came.get(cursor)!; }
-                result.unshift(this.cells[start]); result.push({ x: to.x, z: to.z }); return result;
+                result.unshift(this.cells[start]);
+                if (exactTargetReachable) result.push({ x: to.x, z: to.z });
+                return result;
             }
             closed.add(current);
             const cx = current % this.size, cz = Math.floor(current / this.size);

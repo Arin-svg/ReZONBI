@@ -30,6 +30,7 @@ export class SignalTyrant extends ZombieBase {
     private plates: Node[] = [];
     private geometry!: GeometryFactory;
     private bossSprite: WorldSpriteVisual | null = null;
+    private visualSpeed = 0;
     summon: () => void = () => {};
     initializeBoss(p: PointXZ, context: ZombieContext, g: GeometryFactory): void {
         this.bossContext = context; this.nav = new ArenaNavigation(context.obstacles, .95);
@@ -57,7 +58,7 @@ export class SignalTyrant extends ZombieBase {
         }
         if (g.spriteAssets?.boss) {
             const a = g.spriteAssets;
-            this.bossSprite = new WorldSpriteVisual(this.node, a.camera, a.boss!, a.effect, 'boss');
+            this.bossSprite = new WorldSpriteVisual(this.node, a.camera, a.boss!, a.effect, 'boss', null, null, null, null, null, a.bossWalk ?? null);
             this.body.active = false;
         }
         // Warnings are children of the arena root so facing changes cannot move a locked telegraph.
@@ -70,6 +71,7 @@ export class SignalTyrant extends ZombieBase {
         this.turns = this.repathTime = 0; this.route = []; this.attacked = false;
         if (this.body) this.body.setRotationFromEuler(0, 0, 0);
         this.bossSprite?.reset();
+        this.visualSpeed = 0;
         if (this.warning) this.warning.active = this.lane.active = false;
     }
     receiveDamage(hit: DamageHit): boolean {
@@ -91,6 +93,12 @@ export class SignalTyrant extends ZombieBase {
     tick(dt: number): void {
         if (!this.active) return;
         if (this.dead) { this.tickDeath(dt); return; }
+        const x = this.position.x, z = this.position.z;
+        this.tickBoss(dt);
+        this.visualSpeed = dt > 0 ? Math.hypot(this.position.x - x, this.position.z - z) / dt : 0;
+        this.bossSprite?.animate(dt, this.visualSpeed);
+    }
+    private tickBoss(dt: number): void {
         const nextPhase = this.health.current <= this.health.maximum * .5 ? 2 : 1;
         if (nextPhase !== this.phase) { this.bossContext.effects.slash(this.position, { x: 0, z: 1 }, 3.6, 360); this.phase = nextPhase; }
         this.timer -= dt; this.health.tick(dt);
@@ -147,7 +155,8 @@ export class SignalTyrant extends ZombieBase {
     hide(): void { this.node.active = false; this.warning.active = this.lane.active = false; }
     lateUpdate(dt: number): void {
         // Keep the billboard aligned after boss movement and camera updates.
-        if (this.node.active && !this.dead) this.bossSprite?.animate(dt, 0);
+        // Simulation tick owns animation time, so pause/upgrade selection freeze the cycle.
+        if (this.node.active && !this.dead) this.bossSprite?.animate(0, this.visualSpeed);
     }
     onDestroy(): void { this.bossSprite?.destroy(); super.onDestroy(); }
 }
