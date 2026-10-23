@@ -9,7 +9,7 @@ class Node {
     addComponent(){const c={setSharedMaterial(m){this.material=m;}};this.component=c;return c;}
 }
 const pending=[];
-const cc={Node,MeshRenderer:class{},Texture2D:class{},SphereLight:class{},Color:class{fromHEX(hex){return hex;}},isValid:()=>true,resources:{load(name,type,callback){assert.match(name,/^environment\/(convenience-store|coffee-shop|pharmacy|ramen-shop|abandoned-street)-atlas\/texture$/);pending.push({name,callback});}},utils:{createMesh(data){assert.ok(data.positions.every(Number.isFinite));assert.ok(data.indices.every(i=>i<data.positions.length/3));return data;}}};
+const cc={Node,MeshRenderer:class{static ShadowCastingMode={ON:1};},Texture2D:class{},SphereLight:class{},Color:class{fromHEX(hex){return hex;}},isValid:()=>true,resources:{load(name,type,callback){assert.match(name,/^environment\/((convenience-store|coffee-shop|pharmacy|ramen-shop|abandoned-street|worn-car-paint)-atlas|wet-asphalt|wet-pavement|worn-crosswalk)\/texture$/);pending.push({name,callback});}},utils:{createMesh(data){assert.ok(data.positions.every(Number.isFinite));assert.ok(data.indices.every(i=>i<data.positions.length/3));return data;}}};
 const cache=new Map();
 function load(file,override){file=path.resolve(file);if(!override&&cache.has(file))return cache.get(file);const box={exports:{},require:id=>id==='cc'?cc:load(path.resolve(path.dirname(file),id+'.ts'))};if(!override)cache.set(file,box.exports);vm.runInNewContext(ts.transpileModule(override||fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2019}}).outputText,box);return box.exports;}
 const g={part(parent,name,color,x,y,z,sx,sy,sz){const n=new Node(name);parent.addChild(n);n.setPosition(x,y,z);n.setScale(sx,sy,sz);return n;},form(...args){return this.part(...args);},glow(){},material(){return {};},texturedMaterial(texture,emission,tint){return {texture,emission,tint};},ownMesh(mesh){return mesh;}};
@@ -59,9 +59,34 @@ for(const face of faces){const m=face.component.mesh;const center=[0,0,0];for(le
 assert.equal(car.children.filter(n=>n.name==='Deflated tyre').length,4);
 assert.ok(car.children.some(n=>n.name==='Climbing vine'));
 }
-const streetPng=fs.readFileSync('assets/resources/environment/abandoned-street-atlas.png');
+const streetPng=fs.readFileSync('assets/resources/environment/worn-car-paint-atlas.png');
 assert.equal(streetPng.readUInt32BE(16),streetPng.readUInt32BE(20));
 const streetTexture={uuid:'street',width:streetPng.readUInt32BE(16)};
-pending.find(p=>p.name==='environment/abandoned-street-atlas/texture').callback(null,streetTexture);
-for(const car of cars)for(const face of car.children.filter(n=>n.component?.mesh)){assert.equal(face.component.material.texture,streetTexture);assert.equal(face.component.material.tint,car.name==='Burnt sedan'?'#65575C':'#FFFFFF');}
-console.log('PASS street props: three 3D cars, outward mesh faces, wheels, vines, atlas mapping and burnt material variation');
+pending.find(p=>p.name==='environment/worn-car-paint-atlas/texture').callback(null,streetTexture);
+for(const car of cars)for(const face of car.children.filter(n=>n.component?.mesh)){assert.equal(face.component.material.texture,streetTexture);assert.equal(face.component.material.tint,/window|windshield/i.test(face.name)?'#FFFFFF':({'Faded red sedan':'#CF7770','Grey-white sedan':'#DBD8CD','Faded orange sedan':'#E8A169'}[car.name]));}
+console.log('PASS street props: three 3D cars, outward mesh faces, wheels, vines, atlas mapping, faded red/grey-white/orange paint and untinted glass');
+
+const road=arena.children.find(n=>n.name==='Imported cyberpunk road intersection');
+for(const name of ['wet-asphalt','wet-pavement']){
+const meta=JSON.parse(fs.readFileSync('assets/resources/environment/'+name+'.png.meta','utf8'));assert.equal(meta.subMetas['6c48a'].userData.wrapModeS,'repeat');
+const texture={uuid:name};pending.find(p=>p.name==='environment/'+name+'/texture').callback(null,texture);
+const targets=name==='wet-asphalt'?[road.children[0]]:[road.children[1],road.children[3]];
+for(const target of targets){assert.equal(target.component.material.texture,texture);assert.equal(target.component.mesh.uvs.length,target.component.mesh.positions.length/3*2);}
+}
+const atmosphere=arena.children.find(n=>n.name==='Night street atmosphere');
+assert.equal(atmosphere.children.filter(n=>n.name==='Amber streetlight spill').length,4);
+assert.ok(atmosphere.children.some(n=>n.name==='Overhead utility wires'));
+const scene=JSON.parse(fs.readFileSync('assets/Main.scene','utf8'));
+assert.equal(scene.find(n=>n.__type__==='cc.ShadowsInfo')._enabled,true);
+assert.equal(scene.find(n=>n.__type__==='cc.DirectionalLight')._shadowEnabled,true);
+console.log('PASS night scene: repeat ground textures, UV mapping, street lights, wires and shadow configuration');
+
+const paintTexture={uuid:'worn-crosswalk'};
+pending.find(p=>p.name==='environment/worn-crosswalk/texture').callback(null,paintTexture);
+const batches=load('assets/scripts/levels/ImportedRoadData.ts').importedRoadData;
+const painted=road.children.filter((node,i)=>batches[i].surface==='crosswalk');
+assert.ok(painted.length>0);
+for(const node of painted)assert.equal(node.component.material.texture,paintTexture);
+assert.notEqual(road.children[0].component.material.texture,paintTexture);
+const paint=fs.readFileSync('assets/resources/environment/worn-crosswalk.png');assert.equal(paint.readUInt32BE(16),paint.readUInt32BE(20));
+console.log('PASS worn paint loads only onto zebra crossing batches');

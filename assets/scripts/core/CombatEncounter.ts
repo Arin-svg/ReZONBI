@@ -63,6 +63,9 @@ export class CombatEncounter extends Component {
 
     boss!: SignalTyrant;
     bossSpawned = false;
+    bossCount = 0;
+    readonly bosses: SignalTyrant[] = [];
+    private createBoss!: () => SignalTyrant;
 
     numbers!: DamageNumbers;
 
@@ -70,7 +73,7 @@ export class CombatEncounter extends Component {
 
     targets(): readonly ZombieBase[] {
         return this.bossSpawned
-            ? [...this.spawner.enemies, this.boss]
+            ? [...this.spawner.enemies, ...this.bosses.filter(boss => boss.active)]
             : this.spawner.enemies;
     }
 
@@ -293,59 +296,65 @@ export class CombatEncounter extends Component {
         // Boss
         // -------------------------------------
 
-        const bossNode =
-            new Node('Signal Tyrant');
+        this.createBoss = () => {
+            const bossNode =
+                new Node('Signal Tyrant');
 
-        this.node.addChild(bossNode);
+            this.node.addChild(bossNode);
 
-        this.boss =
-            bossNode.addComponent(SignalTyrant);
+            const boss =
+                bossNode.addComponent(SignalTyrant);
 
-        this.boss.initializeBoss(
-            { x: 0, z: -12 },
-            {
-                player: player.node,
-                health: this.health,
-                obstacles,
-
-                navigation: new ArenaNavigation(
+            boss.initializeBoss(
+                { x: 0, z: -12 },
+                {
+                    player: player.node,
+                    health: this.health,
                     obstacles,
-                    0.95
-                ),
 
-                effects: this.effects,
+                    navigation: new ArenaNavigation(
+                        obstacles,
+                        0.95
+                    ),
 
-                peers: () => [],
+                    effects: this.effects,
 
-                nextHit: () => this.nextHit(),
+                    peers: () => [],
 
-                onHit: (enemy, amount) => {
-                    this.numbers.show(
-                        enemy.position,
-                        `${Math.round(amount)}`,
-                        '#FF92C3'
-                    );
+                    nextHit: () => this.nextHit(),
+
+                    onHit: (enemy, amount) => {
+                        this.numbers.show(
+                            enemy.position,
+                            `${Math.round(amount)}`,
+                            '#FF92C3'
+                        );
+                    },
+
+                    onDeath: enemy => {
+
+                        this.kills++;
+
+                        this.pickups.drop(
+                            enemy.position,
+                            S.bossXP
+                        );
+                    },
                 },
+                geometry
+            );
 
-                onDeath: enemy => {
+            boss.summon = () => {
 
-                    this.kills++;
+                this.spawner.spawn(this.elapsed);
+                this.spawner.spawn(this.elapsed);
 
-                    this.pickups.drop(
-                        enemy.position,
-                        S.bossXP
-                    );
-                },
-            },
-            geometry
-        );
+            };
 
-        this.boss.summon = () => {
-
-            this.spawner.spawn(this.elapsed);
-            this.spawner.spawn(this.elapsed);
-
+            this.bosses.push(boss);
+            return boss;
         };
+        this.boss = this.createBoss();
 
         // -------------------------------------
         // Player combat
@@ -518,7 +527,8 @@ export class CombatEncounter extends Component {
         this.noise.reset();
 
         this.bossSpawned = false;
-        this.boss.hide();
+        this.bossCount = 0;
+        this.bosses.forEach(boss => boss.hide());
 
         this.numbers.reset();
 
@@ -558,7 +568,7 @@ export class CombatEncounter extends Component {
                 if (
                     !this.bossSpawned ||
                     this.noise.pressure >= 60 ||
-                    this.boss.dead
+                    !this.bosses.some(boss => boss.active && !boss.dead)
                 ) {
                     this.spawner.tick(
                         dt,
@@ -568,8 +578,7 @@ export class CombatEncounter extends Component {
                 }
 
                 if (
-                    !this.bossSpawned &&
-                    this.elapsed >= S.bossTime
+                    this.elapsed + 1e-6 >= S.bossTime * (this.bossCount + 1)
                 ) {
                     this.spawnBoss();
                 }
@@ -589,7 +598,10 @@ export class CombatEncounter extends Component {
                     this.bossSpawned &&
                     !this.health.dead
                 ) {
-                    this.boss.tick(dt);
+                    for (const boss of this.bosses) {
+                        if (this.health.dead) break;
+                        boss.tick(dt);
+                    }
                 }
 
                 this.pickups.tick(
@@ -628,7 +640,7 @@ export class CombatEncounter extends Component {
                 );
 
                 if (this.bossSpawned) {
-                    this.boss.tickDeath(dt);
+                    this.bosses.filter(boss => boss.active).forEach(boss => boss.tickDeath(dt));
                 }
             }
 
@@ -672,7 +684,10 @@ export class CombatEncounter extends Component {
 
         this.bossSpawned = true;
 
-        this.boss.resetBoss(position);
+        this.boss = this.bosses.find(boss => !boss.active) ?? this.createBoss();
+        const strength = Math.pow(S.bossStrengthMultiplier, this.bossCount);
+        this.bossCount++;
+        this.boss.resetBoss(position, strength);
     }
 
     openSelection(): void {

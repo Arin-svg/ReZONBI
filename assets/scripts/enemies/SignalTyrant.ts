@@ -14,6 +14,7 @@ type BossStage = 'arrival' | 'approach' | 'slamWarning' | 'chargeWarning' | 'cha
 export class SignalTyrant extends ZombieBase {
     stage: BossStage = 'arrival';
     phase = 1;
+    strength = 1;
     timer = 2;
     private bossContext!: ZombieContext;
     private body!: Node;
@@ -66,8 +67,9 @@ export class SignalTyrant extends ZombieBase {
         this.lane = g.part(this.node.parent!, 'Tyrant charge telegraph', '#D84A63', 0, .1, 0, 1.8, .025, 8);
         this.resetBoss(p); this.node.active = false;
     }
-    resetBoss(p: PointXZ): void {
-        super.reset(p); this.health = new HealthState(1800); this.stage = 'arrival'; this.phase = 1; this.timer = 2;
+    resetBoss(p: PointXZ, strength = 1): void {
+        this.strength = strength;
+        super.reset(p); this.health = new HealthState(Math.round(1800 * strength)); this.stage = 'arrival'; this.phase = 1; this.timer = 2;
         this.turns = this.repathTime = 0; this.route = []; this.attacked = false;
         if (this.body) this.body.setRotationFromEuler(0, 0, 0);
         this.bossSprite?.reset();
@@ -144,7 +146,7 @@ export class SignalTyrant extends ZombieBase {
             if (this.timer <= 0) this.recover();
         } else if (this.stage === 'recovery' && this.timer <= 0) { this.stage = 'approach'; this.timer = this.phase === 2 ? .8 : 1.4; }
     }
-    private hit(amount: number): void { this.bossContext.health.receiveDamage({ amount, id: this.bossContext.nextHit(), source: this.node.uuid, kind: 'melee' }); }
+    private hit(amount: number): void { this.bossContext.health.receiveDamage({ amount: amount * this.strength, id: this.bossContext.nextHit(), source: this.node.uuid, kind: 'melee' }); }
     private recover(): void { this.stage = 'recovery'; this.timer = this.phase === 2 ? 1.25 : 1.65; }
     private moveBoss(dx: number, dz: number): number {
         const p = moveAndSlide(this.position, dx, dz, .9, GameConfig.arenaHalfSize, this.bossContext.obstacles), moved = distance(p, this.position);

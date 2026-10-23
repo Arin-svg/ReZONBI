@@ -225,9 +225,9 @@
     "__prefab": null,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 250,
-      "b": 240,
+      "r": 190,
+      "g": 204,
+      "b": 255,
       "a": 255
     },
     "_useColorTemperature": false,
@@ -236,17 +236,17 @@
       "__id__": 6
     },
     "_visibility": -325058561,
-    "_illuminanceHDR": 22000,
-    "_illuminance": 22000,
-    "_illuminanceLDR": 0.7,
-    "_shadowEnabled": false,
-    "_shadowPcf": 0,
-    "_shadowBias": 0.00001,
-    "_shadowNormalBias": 0,
+    "_illuminanceHDR": 14000,
+    "_illuminance": 14000,
+    "_illuminanceLDR": 0.48,
+    "_shadowEnabled": true,
+    "_shadowPcf": 1,
+    "_shadowBias": 0.001,
+    "_shadowNormalBias": 0.03,
     "_shadowSaturation": 1,
-    "_shadowDistance": 50,
+    "_shadowDistance": 48,
     "_shadowInvisibleOcclusionRange": 200,
-    "_csmLevel": 4,
+    "_csmLevel": 2,
     "_csmLayerLambda": 0.75,
     "_csmOptimizationMode": 2,
     "_csmAdvancedOptions": false,
@@ -436,17 +436,17 @@
       "x": 0.2,
       "y": 0.5,
       "z": 0.8,
-      "w": 0.1562499375
+      "w": 0.10937495625
     },
     "_skyColor": {
       "__type__": "cc.Vec4",
       "x": 0.2,
       "y": 0.5,
       "z": 0.8,
-      "w": 0.1562499375
+      "w": 0.10937495625
     },
-    "_skyIllumHDR": 6000,
-    "_skyIllum": 6000,
+    "_skyIllumHDR": 4200,
+    "_skyIllum": 4200,
     "_groundAlbedoHDR": {
       "__type__": "cc.Vec4",
       "x": 0.2,
@@ -468,7 +468,7 @@
       "z": 0.755699,
       "w": 0
     },
-    "_skyIllumLDR": 0.3,
+    "_skyIllumLDR": 0.24,
     "_groundAlbedoLDR": {
       "__type__": "cc.Vec4",
       "x": 0.618555,
@@ -479,8 +479,8 @@
   },
   {
     "__type__": "cc.ShadowsInfo",
-    "_enabled": false,
-    "_type": 0,
+    "_enabled": true,
+    "_type": 1,
     "_normal": {
       "__type__": "cc.Vec3",
       "x": 0,

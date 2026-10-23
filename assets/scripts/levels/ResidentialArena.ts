@@ -5,6 +5,7 @@ import { GeometryFactory } from './GeometryFactory';
 import { buildShop } from './ShopBuildings';
 import { buildImportedRoad } from './ImportedRoad';
 import { buildStreetProps } from './StreetProps';
+import { buildNightAtmosphere } from './NightAtmosphere';
 
 /** Deliberately small crossed streets with loops around cars and barricades. */
 export function buildResidential(parent: Node, g: GeometryFactory): Obstacle[] {
@@ -32,11 +33,10 @@ export function buildResidential(parent: Node, g: GeometryFactory): Obstacle[] {
         solid('Lamp post', P.charcoal, x, 1.7, z, 0.16, 3.4, 0.16);
         part('Lamp arm', P.charcoal, x - Math.sign(x) * 0.4, 3.35, z, 0.9, 0.12, 0.15);
         const lamp = part('Warm lamp', P.amber, x - Math.sign(x) * 0.8, 3.25, z, 0.35, 0.13, 0.35); g.glow(lamp, '#F4BB84', .65);
-        g.part(parent, 'Warm pavement pool', '#51494D', x - Math.sign(x) * .8, .075, z, 1.7, .012, 1.7, true);
-        g.form(parent, 'Lamp ground halo', '#CB8B72', x - Math.sign(x) * .8, .084, z, .9, .018, .9, 'ring');
     }
     for (const [x,z] of [[-3.2,-9],[10,2.6],[3.2,12]]) obstacles.push({x,z,halfX:.825,halfZ:1.65});
     buildStreetProps(parent,g);
+    buildNightAtmosphere(parent,g);
     for (const [x, z] of [[-9, -2], [2, -6], [-1, 14]]) {
         solid('Road barricade', P.charcoal, x, 0.5, z, 2.4, 1, 0.45);
         part('Warning stripe', P.amber, x, 0.7, z + 0.23, 2.2, 0.15, 0.02);

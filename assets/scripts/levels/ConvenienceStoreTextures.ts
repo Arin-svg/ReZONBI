@@ -38,6 +38,7 @@ export function applyShopTextures(root: Node, g: GeometryFactory, atlas: string,
                 normals: [...normal,...normal,...normal,...normal],
                 uvs: [l,b,r,b,l,t,r,t], indices:[0,1,2,2,1,3] }));
             const renderer = node.addComponent(MeshRenderer); renderer.mesh = mesh;
+            renderer.shadowCastingMode = MeshRenderer.ShadowCastingMode.ON;
             renderer.setSharedMaterial(g.texturedMaterial(texture, emission),0);
         };
         surface('Textured storefront',[-3.5,0,3, 3.5,0,3, -3.5,5.5,3, 3.5,5.5,3],[0,0,1],0,.38);
@@ -60,7 +61,7 @@ export function applyShopTextures(root: Node, g: GeometryFactory, atlas: string,
             const lamp = node.addComponent(SphereLight); lamp.color = new Color().fromHEX(color);
             lamp.range = 5; lamp.size = .3; lamp.luminousFlux = flux;
         };
-        light('Neon storefront spill',neonColor,-1.7,2.75,3.8,420);
-        light('Amber entrance spill','#FFBF77',2.15,1.9,3.6,360);
+        light('Neon storefront spill',neonColor,-1.7,2.75,3.8,650);
+        light('Amber entrance spill','#FFBF77',2.15,1.9,3.6,480);
     });
 }

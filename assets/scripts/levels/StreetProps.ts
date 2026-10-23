@@ -4,6 +4,7 @@ import { GeometryFactory } from './GeometryFactory';
 /** Detailed static props; the arena owns the original car collision footprints. */
 export function buildStreetProps(parent: Node, g: GeometryFactory): void {
     const root = new Node('Abandoned street props'); parent.addChild(root);
+    const paintByCar = new Map<Node,string>();
     const surfaces: { renderer: MeshRenderer; emission: number; tint: string }[] = [];
     const quad = (owner: Node, name: string, p: number[], tile: number, color: string, emission = 0) => {
         const a = [p[3]-p[0],p[4]-p[1],p[5]-p[2]], b = [p[6]-p[0],p[7]-p[1],p[8]-p[2]];
@@ -14,8 +15,9 @@ export function buildStreetProps(parent: Node, g: GeometryFactory): void {
             uvs:[u+e,v+.5-e,u+.5-e,v+.5-e,u+e,v+e,u+.5-e,v+e],indices:[0,1,2,2,1,3]}));
         const node = new Node(name); owner.addChild(node);
         const renderer = node.addComponent(MeshRenderer); renderer.mesh = mesh;
+        if(owner.name.endsWith('sedan'))renderer.shadowCastingMode=MeshRenderer.ShadowCastingMode.ON;
         renderer.setSharedMaterial(g.material(color,emission),0);
-        surfaces.push({renderer,emission,tint:owner.name==='Burnt sedan'?'#65575C':'#FFFFFF'});
+        surfaces.push({renderer,emission,tint:(tile===0||tile===2)?(paintByCar.get(owner)||'#FFFFFF'):'#FFFFFF'});
     };
     const paper = (owner: Node,x:number,z:number,angle:number) => {
         const sheet=new Node('Discarded newspaper');owner.addChild(sheet);sheet.setPosition(x,.085,z);sheet.setRotationFromEuler(0,angle,0);
@@ -42,8 +44,10 @@ export function buildStreetProps(parent: Node, g: GeometryFactory): void {
     };
     const cars=[[-3.2,-9],[10,2.6],[3.2,12]];
     cars.forEach(([x,z],index)=>{
-        const car=new Node(['Overgrown sedan','Wrecked sedan','Burnt sedan'][index]);root.addChild(car);car.setPosition(x,0,z);
-        const steel=index===2?'#302D36':'#575063';
+        const car=new Node(['Faded red sedan','Grey-white sedan','Faded orange sedan'][index]);root.addChild(car);car.setPosition(x,0,z);
+        const paint=['#CF7770','#DBD8CD','#E8A169'][index];
+        paintByCar.set(car,paint);
+        const steel=['#98605A','#AAA79E','#B67B4F'][index];
         g.part(car,'Chassis','#252333',0,.32,0,1.55,.26,3.15);
         // The body and sloped cabin are actual meshes, with front toward -Z.
         quad(car,'Left door panels',[-.8,.36,-1.65,-.8,.36,1.65,-.8,.87,-1.65,-.8,.87,1.65],2,steel);
@@ -95,7 +99,7 @@ export function buildStreetProps(parent: Node, g: GeometryFactory): void {
         g.form(root,'Manhole rim','#837078',x,.084,z,.62,.025,.62,'ring');
         for(let i=-2;i<=2;i++)g.part(root,'Manhole ribs','#302B39',x+i*.09,.085,z,.025,.012,.38);
     }
-    resources.load('environment/abandoned-street-atlas/texture',Texture2D,(error,texture)=>{
+    resources.load('environment/worn-car-paint-atlas/texture',Texture2D,(error,texture)=>{
         if(!isValid(root))return;
         if(error||!texture){console.error('Street textures unavailable; retaining fallback materials.',error);return;}
         for(const surface of surfaces)surface.renderer.setSharedMaterial(g.texturedMaterial(texture,surface.emission,surface.tint),0);

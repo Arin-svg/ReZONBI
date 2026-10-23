@@ -39,8 +39,8 @@ export class GeometryFactory {
         }
         return material;
     }
-    texturedMaterial(texture: Texture2D, emission = 0, tint = '#FFFFFF'): Material {
-        const key = `texture:${texture.uuid}:${emission}:${tint}`;
+    texturedMaterial(texture: Texture2D, emission = 0, tint = '#FFFFFF', roughness = .82): Material {
+        const key = `texture:${texture.uuid}:${emission}:${tint}:${roughness}`;
         let material = this.materials.get(key);
         if (!material) {
             material = new Material();
@@ -49,7 +49,7 @@ export class GeometryFactory {
             }});
             material.setProperty('albedo', new Color().fromHEX(tint));
             material.setProperty('albedoMap', texture);
-            material.setProperty('roughness', .82);
+            material.setProperty('roughness', roughness);
             material.setProperty('metallic', .04);
             if (emission > 0) {
                 material.setProperty('emissiveMap', texture);

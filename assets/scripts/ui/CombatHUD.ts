@@ -108,11 +108,12 @@ export class CombatHUD {
             this.lastNoise = Math.round(e.noise.pressure); this.noiseFill.clear(); this.noiseFill.fillColor = new Color(230, 75, 127);
             this.noiseFill.rect(-80, -2, 160 * e.noise.pressure / 100, 4); this.noiseFill.fill();
         }
-        this.bossText.node.parent!.active = e.bossSpawned && !e.boss.dead;
-        if (e.bossSpawned) text(this.bossText, `SIGNAL TYRANT  /  PHASE ${e.boss.phase}\n${Math.ceil(e.boss.health.current)} / ${e.boss.health.maximum} HP${e.boss.stage === 'recovery' ? '  EXPOSED!' : ''}`);
-        if (e.bossSpawned && this.lastBoss !== e.boss.health.current) {
-            this.lastBoss = e.boss.health.current; this.bossFill.clear(); this.bossFill.fillColor = new Color(255, 66, 126);
-            this.bossFill.rect(-195, -2, 390 * e.boss.health.current / e.boss.health.maximum, 4); this.bossFill.fill();
+        const boss = e.bosses.find(boss => boss.active && !boss.dead) ?? e.boss;
+        this.bossText.node.parent!.active = e.bossSpawned && !boss.dead;
+        if (e.bossSpawned) text(this.bossText, `SIGNAL TYRANT  /  PHASE ${boss.phase}\n${Math.ceil(boss.health.current)} / ${boss.health.maximum} HP${boss.stage === 'recovery' ? '  EXPOSED!' : ''}`);
+        if (e.bossSpawned && this.lastBoss !== boss.health.current) {
+            this.lastBoss = boss.health.current; this.bossFill.clear(); this.bossFill.fillColor = new Color(255, 66, 126);
+            this.bossFill.rect(-195, -2, 390 * boss.health.current / boss.health.maximum, 4); this.bossFill.fill();
         }
         if (key !== this.xpKey) {
             this.xpKey = key; text(this.xpText, `LEVEL ${progress.level}    EXP ${progress.xp} / ${requiredXP(progress.level)}`);

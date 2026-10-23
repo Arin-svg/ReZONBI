@@ -20,3 +20,8 @@ for(const old of ['North south street','Crosswalk paint','Street manhole','Raise
 const b=fs.readFileSync('assets/art/environment/ReZONBI_Cyberpunk_Road_Intersection.glb');
 assert.equal(b.readUInt32LE(0),0x46546c67);assert.equal(b.readUInt32LE(8),b.length);
 console.log('PASS imported road: 4296 triangles, 35 batches, valid normals/indices/bounds, preserved GLB and no duplicate old road');
+
+const crossings=batches.filter(b=>b.surface==='crosswalk');
+assert.equal(crossings.reduce((n,b)=>n+b.indices.length/3,0),28*12,'all 28 original zebra stripes are tagged');
+assert.ok(crossings.every(b=>b.emission===0),'road paint is not emissive');
+console.log('PASS zebra crossing classification: 28 original stripe meshes, no layout changes');
