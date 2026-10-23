@@ -62,7 +62,7 @@ export function buildStreetProps(parent: Node, g: GeometryFactory): void {
             const pillar=g.part(car,'Window pillar',steel,side*.72,1.12,.15,.055,.52,.065);pillar.setRotationFromEuler(0,0,side*18);
             g.part(car,'Side mirror',steel,side*.84,.95,-.55,.12,.1,.17);
             for(const wheelZ of [-1.05,1.08]) {
-                const tire=g.part(car,'Deflated tyre','#171B24',side*.79,.3,wheelZ,.24,.5,.52,true);
+                g.part(car,'Deflated tyre','#171B24',side*.79,.3,wheelZ,.24,.5,.52,true);
                 const rim=g.form(car,'Rusty wheel rim','#807475',side*.92,.3,wheelZ,.37,.37,.37,'ring');rim.setRotationFromEuler(0,0,90);
                 g.part(car,'Wheel hub','#3F3A46',side*.92,.3,wheelZ,.025,.15,.15,true);
             }
@@ -76,18 +76,22 @@ export function buildStreetProps(parent: Node, g: GeometryFactory): void {
         cone(car,-1.13,.85,true);brick(car,1.15,1.23);
         paper(car,-1.15,-.55,index*37);paper(car,1.16,.25,index*57);
         // Large litter sits beside the car; this is decorative and adds no blockers.
-        const bag=g.form(car,'Tied trash bag','#292938',1.13,.28,-1.05,.38,.43,.36,'crystal');
+        g.form(car,'Tied trash bag','#292938',1.13,.28,-1.05,.38,.43,.36,'crystal');
         g.part(car,'Bag knot','#514653',1.13,.51,-1.05,.1,.12,.1);
         g.form(car,'Discarded can','#9B6045',-1.1,.14,-1.18,.14,.2,.14,'taper');
     });
     // Low-profile street dressing leaves the crossing and chase routes open.
     for(const [x,z] of [[-4.5,-11],[4.5,9],[-10,3.8],[12,-3.8]]) {
         cone(root,x,z,false);paper(root,x+.45,z+.3,x*9);brick(root,x-.3,z+.5);
-        const drain=g.part(root,'Recessed street drain','#222737',x,.065,z-1,.6,.02,.42);
+        g.part(root,'Recessed street drain','#222737',x,.065,z-1,.6,.02,.42);
         for(let i=0;i<6;i++)g.part(root,'Drain grille','#655C65',x-.25+i*.1,.08,z-1,.025,.02,.36);
+        for(let i=0;i<4;i++) {
+            const crack=g.part(root,'Branching asphalt crack','#141A27',x+.2+i*.13,.071,z-.4-i*.16,.025,.006,.27);
+            crack.setRotationFromEuler(0,i%2?55:-20,0);
+        }
     }
     for(const [x,z] of [[-3.6,-4],[3.6,4]]) {
-        const cover=g.form(root,'Weathered manhole','#534650',x,.065,z,.68,.025,.68,'taper');
+        g.form(root,'Weathered manhole','#534650',x,.065,z,.68,.025,.68,'taper');
         g.form(root,'Manhole rim','#837078',x,.084,z,.62,.025,.62,'ring');
         for(let i=-2;i<=2;i++)g.part(root,'Manhole ribs','#302B39',x+i*.09,.085,z,.025,.012,.38);
     }

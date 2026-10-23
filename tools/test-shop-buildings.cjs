@@ -12,7 +12,7 @@ const pending=[];
 const cc={Node,MeshRenderer:class{},Texture2D:class{},SphereLight:class{},Color:class{fromHEX(hex){return hex;}},isValid:()=>true,resources:{load(name,type,callback){assert.match(name,/^environment\/(convenience-store|coffee-shop|pharmacy|ramen-shop|abandoned-street)-atlas\/texture$/);pending.push({name,callback});}},utils:{createMesh(data){assert.ok(data.positions.every(Number.isFinite));assert.ok(data.indices.every(i=>i<data.positions.length/3));return data;}}};
 const cache=new Map();
 function load(file,override){file=path.resolve(file);if(!override&&cache.has(file))return cache.get(file);const box={exports:{},require:id=>id==='cc'?cc:load(path.resolve(path.dirname(file),id+'.ts'))};if(!override)cache.set(file,box.exports);vm.runInNewContext(ts.transpileModule(override||fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2019}}).outputText,box);return box.exports;}
-const g={part(parent,name,color,x,y,z,sx,sy,sz){const n=new Node(name);parent.addChild(n);n.setPosition(x,y,z);n.setScale(sx,sy,sz);return n;},form(...args){return this.part(...args);},glow(){},material(){return {};},texturedMaterial(texture,emission){return {texture,emission};},ownMesh(mesh){return mesh;}};
+const g={part(parent,name,color,x,y,z,sx,sy,sz){const n=new Node(name);parent.addChild(n);n.setPosition(x,y,z);n.setScale(sx,sy,sz);return n;},form(...args){return this.part(...args);},glow(){},material(){return {};},texturedMaterial(texture,emission,tint){return {texture,emission,tint};},ownMesh(mesh){return mesh;}};
 const arena=new Node('Arena');
 const obstacles=load('assets/scripts/levels/ResidentialArena.ts').buildResidential(arena,g);
 const baseline=require('node:child_process').execFileSync('git',['show','HEAD:assets/scripts/levels/ResidentialArena.ts'],{encoding:'utf8'});
@@ -48,3 +48,20 @@ failed.callback(new Error('simulated missing atlas'),null);
 assert.notEqual(fallback.children[0].children.find(n=>n.name==='House').active,false);
 assert.equal(fallback.children[0].children.filter(n=>n.name.startsWith('Textured ')).length,0);
 console.log('PASS failed atlas retains fallback geometry');
+
+const street=arena.children.find(n=>n.name==='Abandoned street props');
+assert.ok(street);
+const cars=street.children.filter(n=>n.name.endsWith('sedan'));
+assert.equal(cars.length,3);
+for(const car of cars){
+const faces=car.children.filter(n=>n.component?.mesh);assert.equal(faces.length,11);
+for(const face of faces){const m=face.component.mesh;const center=[0,0,0];for(let i=0;i<12;i++)center[i%3]+=m.positions[i]/4;center[1]-=.75;assert.ok(center.reduce((sum,v,i)=>sum+v*m.normals[i],0)>0,'car face points outward: '+face.name);assert.ok(m.uvs.every(v=>v>0&&v<1));}
+assert.equal(car.children.filter(n=>n.name==='Deflated tyre').length,4);
+assert.ok(car.children.some(n=>n.name==='Climbing vine'));
+}
+const streetPng=fs.readFileSync('assets/resources/environment/abandoned-street-atlas.png');
+assert.equal(streetPng.readUInt32BE(16),streetPng.readUInt32BE(20));
+const streetTexture={uuid:'street',width:streetPng.readUInt32BE(16)};
+pending.find(p=>p.name==='environment/abandoned-street-atlas/texture').callback(null,streetTexture);
+for(const car of cars)for(const face of car.children.filter(n=>n.component?.mesh)){assert.equal(face.component.material.texture,streetTexture);assert.equal(face.component.material.tint,car.name==='Burnt sedan'?'#65575C':'#FFFFFF');}
+console.log('PASS street props: three 3D cars, outward mesh faces, wheels, vines, atlas mapping and burnt material variation');
