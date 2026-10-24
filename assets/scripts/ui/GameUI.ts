@@ -1,17 +1,20 @@
-import { BlockInputEvents, Color, director, game, Graphics, Label, Node, sys, UITransform } from 'cc';
+import { AudioManager } from '../systems/AudioManager';
+import { BlockInputEvents, Color, EventTouch, Vec3, director, game, Graphics, Label, Node, sys, UITransform } from 'cc';
 import type { CombatEncounter } from '../core/CombatEncounter';
 import { captureRun, parseRun, restoreRun } from '../systems/RunCheckpoint';
 import { action, artwork, copy, entrance, heading, stretch } from './CyberWidgets';
 import { label, panel, pin, ui } from './ExplorationHUD';
 
 type Page='home'|'game'|'pause'|'settings'|'tutorial'|'defeat'|'victory'|'confirm'|'dialogue'|'stats';
-export type Notice='Incoming Horde'|'Supply Found'|'Ammo Low'|'Health Low'|'Skill Ready'|'Door Locked'|'Item Obtained'|'Objective Updated'|'Area Cleared'|'Save Point';
+export type Notice='Supply Found'|'Ammo Low'|'Health Low'|'Skill Ready'|'Door Locked'|'Item Obtained'|'Objective Updated'|'Area Cleared'|'Save Point';
 const SAVE='rezonbi.run.v1', SETTINGS='rezonbi.ui.settings.v1';
 const TUTORIAL=[['SURVIVE NEW HAVEN','The infected are everywhere. Keep moving and stay alert.'],['EQUIPPED WEAPONS','Your pistol has unlimited ammo. Area slash is a short-range attack that can hit multiple enemies.'],['NOISE DETECTION','Gunfire attracts more infected. Keep moving after you shoot.'],['HEALTH AND DAMAGE','Your health is shown here. Avoid taking damage to survive longer.'],['MINIMAP','The minimap shows your position, enemies, and obstacles in the area.']];
 
 /** Screen flow owns UI pause only; simulation and combat remain in the encounter. */
 export class GameUI {
     page:Page='home';
+    private audio:AudioManager;
+    private musicPage:'home'|'combat'|'boss'|'defeat'|'victory'='home';
     private overlay:Node;
     private art:Node;
     private content:Node;
@@ -40,6 +43,7 @@ export class GameUI {
     private holding=false;
     private holdAction:(()=>void)|null=null;
     constructor(private e:CombatEncounter) {
+        this.audio=new AudioManager(e.node);
         this.safe=e.node.parent!.getChildByName('Mobile Canvas')!.getChildByName('Safe area')!;
         const minimap=ui(e.hud.node,'Minimap',128,128);pin(minimap,'right','top',94,20);this.map=minimap.addComponent(Graphics);
         const blocks=e.combat.blocksMouse;e.combat.blocksMouse=p=>blocks(p)||minimap.getComponent(UITransform)!.hitTest(p);
@@ -67,6 +71,7 @@ export class GameUI {
         try{sys.localStorage.setItem(SAVE,JSON.stringify(captureRun(this.e)));return true;}catch{return false;}
     }
     routePause():boolean {
+        this.audio.playSfx('pause');
         if(this.page==='game'){if(this.e.selecting||this.e.state!=='playing')return true;this.save();this.show('pause');}
         else if(this.page==='pause')this.show('game');
         else if(['settings','tutorial','stats','dialogue'].indexOf(this.page)>=0)this.show(this.back);
@@ -81,10 +86,10 @@ export class GameUI {
         const saved=this.saved();if(!saved){this.show('home');return;}
         restoreRun(this.e,saved);this.started=true;this.resetTracking();this.show('game');this.notify('Save Point','Checkpoint restored.');
     }
-    private resetTracking():void {this.previousHP=this.e.health.state.current;this.previousSlash=this.e.combat.knifeCooldown;this.previousBoss=this.e.bossCount;this.previousPhase=Math.floor(this.e.elapsed/30);this.saveTime=0;this.toastTime=0;}
+    private resetTracking():void {this.previousHP=this.e.health.state.current;this.previousSlash=this.e.combat.knifeCooldown;this.saveTime=0;this.toastTime=0;}
     private home():void {if(this.e.state==='playing')this.save();this.e.selecting=false;this.e.selection.refresh(false);this.show('home');}
     private show(page:Page):void {
-        this.page=page;this.freeze(page!=='game');this.e.hud.node.active=page==='game';this.overlay.active=page!=='game';
+        this.page=page;this.syncMusic();this.freeze(page!=='game');this.e.hud.node.active=page==='game';this.overlay.active=page!=='game';
         if(page==='game')return;
         this.overlay.setSiblingIndex(this.safe.children.length-1);this.art.active=page==='home';this.clear();
         if(page==='home'){
@@ -93,17 +98,17 @@ export class GameUI {
             artwork(left,'ui/title-logo',460,153,()=>logo.active=false).setPosition(0,190);
             const glitch=ui(left,'Logo neon scratches',390,100);glitch.setPosition(0,190);glitch.setSiblingIndex(0);const ink=glitch.addComponent(Graphics);
             for(let i=0;i<9;i++){ink.fillColor=new Color().fromHEX(i%3===0?'#42D9EA':'#C91457');ink.rect(-205+i*37,(i%2?1:-1)*(45+i%3*5),22+i%3*9,2);ink.fill();}
-            heading(left,'NEW HAVEN  /  SURVIVAL',100,15);
+            heading(left,'WELCOME TO NEW HAVEN',100,15);
             this.button('▶   START',45,()=>this.saved()?this.confirm('Start a new run?\nYour saved checkpoint will be replaced.',()=>this.start(),'home'):this.start(),true,true,left);
             this.button('CONTINUE',-26,()=>this.resumeSaved(),false,!!this.saved(),left);
             this.button('SETTINGS',-97,()=>{this.back='home';this.show('settings');},false,true,left);
             this.button(sys.isNative?'EXIT':'EXIT',-168,()=>this.confirm('Exit Re:ZONBI?',()=>game.end(),'home'),false,sys.isNative,left);
-            heading(left,'CHECKPOINT SAVES AUTOMATICALLY',-235,12);
+
             const stats=this.button('STATS',245,()=>{this.back='home';this.show('stats');});stats.setPosition(295,245);stats.getComponent(UITransform)!.setContentSize(150,58);stats.setScale(.55,.8,1);
         }else{
             const frame=ui(this.content,'Modal frame',600,570);panel(frame,600,570);
             if(page==='pause'){
-                heading(frame,'PAUSED',220,38);heading(frame,'NEW HAVEN  /  SURVIVAL',165,15);
+                heading(frame,'PAUSED',220,38);heading(frame,'WELCOME TO NEW HAVEN',165,15);
                 this.button('RESUME',85,()=>this.show('game'),true,true,frame);
                 this.button('SETTINGS',10,()=>{this.back='pause';this.show('settings');},false,true,frame);
                 this.button('TUTORIAL',-65,()=>{this.back='pause';this.tutorialPage=0;this.show('tutorial');},false,true,frame);
@@ -114,17 +119,17 @@ export class GameUI {
                 this.button('RESTART ENCOUNTER',-115,()=>this.start(),true,true,frame);
                 this.button('RETURN TO HOMEPAGE',-195,()=>this.home(),false,true,frame);
             }else if(page==='victory'){
-                heading(frame,'STAGE CLEAR',190,46);heading(frame,'SIGNAL TYRANT DEFEATED',132,18);
+                heading(frame,'STAGE CLEAR',190,46);heading(frame,'TYRANT DEFEATED',132,18);
                 heading(frame,`TIME  ${this.time()}\nKILLS  ${this.e.kills}\nREWARD  ${this.pendingClear} EXP DROPPED`,25,23);
-                this.button('NEXT STAGE',-105,()=>{this.pendingClear=0;this.show('game');this.notify('Objective Updated','Keep surviving. The next Tyrant is stronger.');},true,true,frame);
+                this.button('NEXT STAGE',-105,()=>{this.pendingClear=0;this.show('game');this.notify('Objective Updated','Keep going!');},true,true,frame);
                 this.button('RETURN TO HOMEPAGE',-185,()=>{this.pendingClear=0;this.home();},false,true,frame);
             }else if(page==='settings'){
                 heading(frame,'SETTINGS',220,36);
-                this.button('MUSIC — NO AUDIO INSTALLED',130,()=>{},false,false,frame);
-                this.button('SFX — NO AUDIO INSTALLED',60,()=>{},false,false,frame);
+                this.audioSlider(frame,'music',130);
+                this.audioSlider(frame,'sfx',60);
                 this.button('GRAPHICS  ‹  '+this.quality.toUpperCase()+'  ›',-10,()=>{this.quality=this.quality==='high'?'low':'high';this.applyQuality();try{sys.localStorage.setItem(SETTINGS,JSON.stringify({quality:this.quality}));}catch{}this.show('settings');},false,true,frame);
                 this.button('LANGUAGE: ENGLISH',-80,()=>{},false,false,frame);
-                heading(frame,'High: shadows on   /   Low: shadows off',-140,14);this.button('BACK',-210,()=>this.show(this.back),true,true,frame);
+                heading(frame,'',-140,14);this.button('BACK',-210,()=>this.show(this.back),true,true,frame);
             }else if(page==='tutorial'){
                 heading(frame,'FIELD GUIDE',220,34);heading(frame,TUTORIAL[this.tutorialPage][0],140,23);
                 heading(frame,TUTORIAL[this.tutorialPage][1],35,20);heading(frame,`${this.tutorialPage+1} / ${TUTORIAL.length}`,-65,16);
@@ -165,6 +170,7 @@ export class GameUI {
         const cover=Math.max(width/1280,height/720);this.art.setScale(cover,cover,1);
     }
     tick(dt:number):void {
+        this.syncMusic();this.audio.tick(dt);
         this.layout();const e=this.e;
         if(this.page==='game'&&e.state==='defeat'){this.removeSave();this.show('defeat');return;}
         if(this.page==='game'&&this.pendingClear&&!e.selecting){this.save();this.show('victory');return;}
@@ -173,12 +179,36 @@ export class GameUI {
         this.mapTime-=dt;if(this.mapTime<=0){this.mapTime=.1;this.drawMap();}
         if(e.health.state.current<=e.health.state.maximum*.25&&this.previousHP>e.health.state.maximum*.25)this.notify('Health Low','Dodge and keep your distance.');
         if(this.previousSlash>0&&e.combat.knifeCooldown<=0)this.notify('Skill Ready','Area slash is ready. Tap the knife.');
-        if(e.bossCount>this.previousBoss)this.notify('Incoming Horde','Signal Tyrant has arrived.');
-        if(Math.floor(e.elapsed/30)>this.previousPhase)this.notify('Incoming Horde','Infected pressure is increasing.');
-        this.previousHP=e.health.state.current;this.previousSlash=e.combat.knifeCooldown;this.previousBoss=e.bossCount;this.previousPhase=Math.floor(e.elapsed/30);
+        this.previousHP=e.health.state.current;this.previousSlash=e.combat.knifeCooldown;
         this.saveTime+=dt;if(this.saveTime>=15){this.saveTime=0;this.save();}
         this.toastTime-=dt;if(this.toastTime<=0){const n=this.notices.shift();this.toast.active=!!n;if(n){copy(this.toast,n.title.toUpperCase()+'\n'+n.detail);this.toastTime=3;entrance(this.toast);}}
         this.popupTime-=dt;this.popup.active=this.popupTime>0;
+    }
+    private syncMusic():void {
+        if(this.page==='home'||this.page==='defeat'||this.page==='victory')this.musicPage=this.page;
+        else if(this.page==='game')this.musicPage=this.e.bosses.some(b=>b.active&&!b.dead)?'boss':'combat';
+        this.audio.musicState(this.musicPage,this.e.selecting||(this.page!=='game'&&this.page!=='home'&&this.page!=='defeat'&&this.page!=='victory'));
+    }
+    private audioSlider(parent:Node,channel:'music'|'sfx',y:number):void {
+        const row=ui(parent,channel+' volume',420,62);row.setPosition(0,y);
+        const title=label(row,channel+' percentage','',270,25,16);title.setPosition(-55,20);
+        const track=ui(row,channel+' slider',250,36);track.setPosition(-55,-10);const g=track.addComponent(Graphics);
+        const mute=action(row,channel+' mute','',-3,()=>{this.audio.toggleMute(channel);draw();},false,true,110);mute.setPosition(160,-3);
+        const draw=()=>{
+            const value=this.audio[channel];copy(title,channel.toUpperCase()+'  '+Math.round(value*100)+'%');
+            copy(mute,(channel==='music'?this.audio.musicMuted:this.audio.sfxMuted)?'UNMUTE':'MUTE');
+            g.clear();g.fillColor=new Color(47,61,85);g.roundRect(-125,-4,250,8,4);g.fill();
+            g.fillColor=new Color(247,40,120);if(value>0){g.rect(-125,-4,250*value,8);g.fill();}
+            g.fillColor=new Color(255,205,232);g.circle(-125+250*value,0,9);g.fill();
+        };
+        let finger:number|null=null;
+        const move=(event:EventTouch)=>{event.propagationStopped=true;if(finger!==event.getID())return;
+            const p=event.getUILocation();const local=track.getComponent(UITransform)!.convertToNodeSpaceAR(new Vec3(p.x,p.y,0));
+            this.audio.setVolume(channel,(local.x+125)/250);draw();};
+        track.on(Node.EventType.TOUCH_START,(event:EventTouch)=>{if(finger!==null)return;finger=event.getID();move(event);});
+        track.on(Node.EventType.TOUCH_MOVE,move);
+        track.on(Node.EventType.TOUCH_END,(event:EventTouch)=>{if(finger!==event.getID())return;move(event);finger=null;this.audio.unlock();if(channel==='sfx')this.audio.playSfx('ui_click');});
+        track.on(Node.EventType.TOUCH_CANCEL,()=>{finger=null;});draw();
     }
     private drawMap():void {
         const g=this.map;g.clear();g.fillColor=new Color(7,12,25,220);g.circle(0,0,59);g.fill();g.strokeColor=new Color(255,35,112);g.lineWidth=2;g.stroke();

@@ -1,3 +1,4 @@
+import { AudioManager } from './AudioManager';
 import { Node } from 'cc';
 import type { CombatEncounter } from '../core/CombatEncounter';
 import { GeometryFactory } from '../levels/GeometryFactory';
@@ -40,7 +41,7 @@ export class SkillEffects {
             }
         });
         this.pulse -= dt; const pulseRank = e.progression.rank('pulse');
-        if (pulseRank && this.pulse <= 0) { this.pulse = 6 - pulseRank * .5; this.area(p, 2.5 + pulseRank * .35, 20 + pulseRank * 10, .25); e.noise.emit('pulse', p, e.spawner.enemies); }
+        if (pulseRank && this.pulse <= 0) { AudioManager.instance?.playSfx('electric_pulse'); this.pulse = 6 - pulseRank * .5; this.area(p, 2.5 + pulseRank * .35, 20 + pulseRank * 10, .25); e.noise.emit('pulse', p, e.spawner.enemies); }
         if (this.shadow) {
             this.shadow.remaining -= dt;
             if (!this.shadow.fired && this.shadow.remaining <= 0) { this.shadow.fired = true; this.area(this.shadow.p, 1.8, 20 + e.progression.rank('shadow') * 8); this.shadow = null; }

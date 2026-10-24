@@ -1,3 +1,4 @@
+import { AudioManager } from '../systems/AudioManager';
 import { _decorator, Component, Node } from 'cc';
 import { CombatConfig as C, GameConfig } from '../core/GameConfig';
 import { moveAndSlide, Obstacle, PointXZ } from '../core/MovementMath';
@@ -63,6 +64,7 @@ export class ZombieBase extends Component implements Damageable {
     stun(duration: number): void { if (!this.dead) { this.stunTime = Math.max(this.stunTime, duration); this.state = 'Stunned'; this.attackTime = 0; } }
     receiveDamage(hit: DamageHit): boolean {
         if (!this.health.damage(hit)) return false;
+        if(hit.kind==='pistol')AudioManager.instance?.playSfx('bullet_impact');
         this.context.onHit?.(this, hit.amount);
         this.hurtTime = 0.15; this.context.effects.impact(this.position);
         if (this.dead) { this.state = 'Dead'; this.deathTime = 0.001; this.attackTime = 0; this.context.onDeath?.(this, hit); }
@@ -94,9 +96,10 @@ export class ZombieBase extends Component implements Damageable {
         } else {
             if ((this.state === 'Idle' || this.state === 'Investigate') && d <= this.stats.detection && visible && !this.context.health.dead) this.state = 'Chase';
             if (this.state === 'Chase') {
+                if(d<9)AudioManager.instance?.playSfx('zombie_groan');
                 this.destination = { x: player.x, z: player.z };
                 if (d <= this.stats.range && visible) {
-                    if (this.cooldown <= 0) { this.state = 'Attack'; this.attackTime = this.stats.windup; }
+                    if (this.cooldown <= 0) { AudioManager.instance?.playSfx('zombie_attack'); this.state = 'Attack'; this.attackTime = this.stats.windup; }
                 } else moving = this.move(dt);
             } else if (this.state === 'Investigate') {
                 if (distance(this.position, this.destination) < 0.5) this.state = 'Idle'; else moving = this.move(dt);

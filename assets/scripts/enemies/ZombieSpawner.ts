@@ -1,3 +1,4 @@
+import { AudioManager } from '../systems/AudioManager';
 import { Node } from 'cc';
 import { CombatConfig as C, enemyHealthMultiplier, SurvivalConfig as S } from '../core/GameConfig';
 import { overlaps, PointXZ } from '../core/MovementMath';
@@ -10,6 +11,7 @@ export class ZombieSpawner {
     readonly enemies: ZombieBase[] = [];
     private candidates: PointXZ[] = [];
     private cooldown = 4;
+    private audioPhase=0;
     constructor(private parent: Node, private geometry: GeometryFactory, private context: ZombieContext) {
         for (let x = -16; x <= 16; x += 2) for (let z = -16; z <= 16; z += 2)
             if (!context.obstacles.some(o => overlaps({ x, z }, C.enemyRadius + .15, o))) this.candidates.push({ x, z });
@@ -46,6 +48,9 @@ export class ZombieSpawner {
         return null;
     }
     tick(dt: number, elapsed: number, pressure = 0): void {
+        const wave=Math.min(4,Math.floor(elapsed/S.phaseSeconds));
+        if(wave>this.audioPhase)AudioManager.instance?.playSfx('horde_warning');
+        this.audioPhase=wave;
         this.cooldown -= dt;
         if (this.cooldown > 0) return;
         const phase = Math.min(4, Math.floor(elapsed / S.phaseSeconds));
@@ -53,12 +58,14 @@ export class ZombieSpawner {
         this.spawn(elapsed);
     }
     restoreCheckpoint(states: {kind:ZombieKind;x:number;z:number;hp:number;max:number}[], elapsed:number):void {
+        this.audioPhase=Math.min(4,Math.floor(elapsed/S.phaseSeconds));
         // Rebuild only when loading a checkpoint; ordinary spawns keep their pool.
         this.enemies.forEach(e=>e.node.destroy());this.enemies.length=0;
         this.cooldown=S.spawnIntervals[Math.min(4,Math.floor(elapsed/S.phaseSeconds))];
         for(const state of states){const enemy=this.create(state.kind,state,state.max/C[state.kind].hp,1+Math.min(4,Math.floor(elapsed/S.phaseSeconds))*.15);if(enemy)enemy.health.current=state.hp;}
     }
     reset(): void {
+        this.audioPhase=0;
         this.enemies.forEach(e => e.node.active = false); this.cooldown = S.spawnIntervals[0];
         const initial: [ZombieKind, number, number][] = [['walker', -6, 2], ['walker', 0, -7], ['walker', 6, -2], ['runner', -3, 7], ['walker', 4, -7]];
         for (const [kind, x, z] of initial) this.create(kind, { x, z });

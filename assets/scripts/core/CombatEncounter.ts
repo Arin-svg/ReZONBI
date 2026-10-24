@@ -1,3 +1,4 @@
+import { AudioManager } from '../systems/AudioManager';
 
 import {
     _decorator,
@@ -253,6 +254,7 @@ export class CombatEncounter extends Component {
                 nextHit: () => ++this.hitId,
 
                 onHit: (enemy, amount) => {
+                    AudioManager.instance?.playSfx('zombie_hit');
                     this.numbers.show(
                         enemy.position,
                         `${Math.round(amount)}`
@@ -260,6 +262,7 @@ export class CombatEncounter extends Component {
                 },
 
                 onDeath: (enemy, hit) => {
+                    AudioManager.instance?.playSfx('zombie_death');
 
                     this.kills++;
 
@@ -278,6 +281,7 @@ export class CombatEncounter extends Component {
                             : 0;
 
                     if (healed) {
+                        AudioManager.instance?.playSfx('bloodlust');
 
                         this.effects.impact(
                             player.node.position,
@@ -334,6 +338,7 @@ export class CombatEncounter extends Component {
                     },
 
                     onDeath: enemy => {
+                        AudioManager.instance?.playSfx('boss_defeat');
 
                         this.kills++;
 
@@ -389,6 +394,7 @@ export class CombatEncounter extends Component {
                 this.progression.rank(id),
 
             onAction: kind => {
+                AudioManager.instance?.playSfx({pistol:'gunshot',knife:'melee_slash',dodge:'dodge'}[kind]);
 
                 this.noise.emit(
                     kind,
@@ -412,6 +418,8 @@ export class CombatEncounter extends Component {
             !this.selecting;
 
         this.health.onDamaged = dead => {
+            AudioManager.instance?.playSfx(dead?'rin_death':'rin_hurt');
+            if(!dead && this.health.state.current/this.health.state.maximum<=.25)AudioManager.instance?.playSfx('low_hp');
 
             player.visual?.play(
                 dead ? 'die' : 'hurt',
@@ -617,7 +625,9 @@ export class CombatEncounter extends Component {
                     0.7 + this.progression.rank('magnet') * 0.15,
                     xp => {
 
+                        const oldLevel=this.progression.level;
                         this.progression.addXP(xp);
+                        AudioManager.instance?.playSfx(this.progression.level>oldLevel?'level_jingle':'exp_pickup');
 
                         this.numbers.show(
                             this.player.node.position,
@@ -700,6 +710,7 @@ export class CombatEncounter extends Component {
         const strength = Math.pow(S.bossStrengthMultiplier, this.bossCount);
         this.bossCount++;
         this.boss.resetBoss(position, strength);
+        AudioManager.instance?.playSfx('boss_spawn');
     }
 
     openSelection(): void {
@@ -734,6 +745,7 @@ export class CombatEncounter extends Component {
             return;
         }
 
+        AudioManager.instance?.playSfx('upgrade_selected');
         this.selecting = false;
 
         this.selection.refresh(false);

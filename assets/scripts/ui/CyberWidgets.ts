@@ -1,3 +1,4 @@
+import { AudioManager } from '../systems/AudioManager';
 import { Color, EventTouch, Graphics, isValid, Label, Node, resources, Sprite, SpriteFrame, Texture2D, tween, Tween, UIOpacity, UITransform, Vec3, Widget } from 'cc';
 import { label, panel, ui } from './ExplorationHUD';
 
@@ -19,7 +20,7 @@ export function action(parent:Node,name:string,text:string,y:number,click:()=>vo
     const reset=()=>{owner=null;Tween.stopAllByTarget(n);n.setScale(sx,sy,1);};
     n.on(Node.EventType.TOUCH_START,(e:EventTouch)=>{e.propagationStopped=true;if(owner!==null)return;owner=e.getID();sx=n.scale.x;sy=n.scale.y;Tween.stopAllByTarget(n);tween(n).to(.07,{scale:new Vec3(sx*.97,sy*.97,1)}).start();});
     n.on(Node.EventType.TOUCH_CANCEL,reset);
-    n.on(Node.EventType.TOUCH_END,(e:EventTouch)=>{e.propagationStopped=true;if(owner!==e.getID())return;const inside=n.getComponent(UITransform)!.hitTest(e.getLocation());reset();if(inside)click();});
+    n.on(Node.EventType.TOUCH_END,(e:EventTouch)=>{e.propagationStopped=true;if(owner!==e.getID())return;const inside=n.getComponent(UITransform)!.hitTest(e.getLocation());reset();if(inside){AudioManager.instance?.unlock();AudioManager.instance?.playSfx(text==='CONFIRM'?'ui_confirm':text==='BACK'||text==='CANCEL'?'ui_back':'ui_click');click();}});
     return n;
 }
 export function artwork(parent:Node,path:string,width:number,height:number,ready?:()=>void):Node {

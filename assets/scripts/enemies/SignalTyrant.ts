@@ -1,3 +1,4 @@
+import { AudioManager } from '../systems/AudioManager';
 import { _decorator, Node } from 'cc';
 import { GameConfig } from '../core/GameConfig';
 import { moveAndSlide, PointXZ } from '../core/MovementMath';
@@ -102,7 +103,7 @@ export class SignalTyrant extends ZombieBase {
     }
     private tickBoss(dt: number): void {
         const nextPhase = this.health.current <= this.health.maximum * .5 ? 2 : 1;
-        if (nextPhase !== this.phase) { this.bossContext.effects.slash(this.position, { x: 0, z: 1 }, 3.6, 360); this.phase = nextPhase; }
+        if (nextPhase !== this.phase) { AudioManager.instance?.playSfx('boss_phase'); this.bossContext.effects.slash(this.position, { x: 0, z: 1 }, 3.6, 360); this.phase = nextPhase; }
         this.timer -= dt; this.health.tick(dt);
         this.core.setScale(.55 + Math.sin(this.timer * 8) * .06, .75, .22);
         this.geometry.glow(this.core, this.stage === 'recovery' ? '#FFE2F3' : this.phase === 2 ? '#FF318B' : '#FF427E', this.stage === 'recovery' ? 1 : .7);
@@ -130,10 +131,12 @@ export class SignalTyrant extends ZombieBase {
                 if (this.phase === 2 && this.turns % 3 === 0) this.summon();
             }
         } else if (this.stage === 'slamWarning' && this.timer <= 0) {
+            AudioManager.instance?.playSfx('boss_attack');
             this.warning.active = false; this.bossContext.effects.slash(this.attackOrigin, this.aim, 3.2, 360);
             if (distance(this.attackOrigin, player) <= 3.2 && clearLine(this.attackOrigin, player, this.bossContext.obstacles)) this.hit(50);
             this.recover();
         } else if (this.stage === 'chargeWarning' && this.timer <= 0) {
+            AudioManager.instance?.playSfx('boss_attack');
             this.lane.active = false; this.stage = 'charge'; this.timer = .8;
         } else if (this.stage === 'charge') {
             // Substeps prevent skipping a player or thin wall during the charge.
