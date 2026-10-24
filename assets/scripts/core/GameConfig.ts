@@ -21,8 +21,9 @@ export const Palette = {
 
 /** Short first playable Horde run. Survival time excludes pauses and upgrade choices. */
 export const SurvivalConfig = {
-    bossTime: 120, bossStrengthMultiplier: 1.5, maxEnemies: 24, phaseSeconds: 30,
-    spawnIntervals: [4, 3, 2, 1.4, 1.2], runnerChances: [.1, .25, .4, .5, .55],
+    bossEveryWaves: 5, bossSpawnThreshold: 50, bossStrengthMultiplier: 1.5, maxEnemies: 24, phaseSeconds: 30,
+    baseSpawnBudget: 8, waveGrowth: 1.015, baseSpawnInterval: 4, minSpawnInterval: .4, spawnGrowthPerMinute: .05,
+    runnerChances: [.1, .25, .4, .5, .55],
     minSpawnDistance: 7, maxSpawnDistance: 15,
     walkerXP: 5, runnerXP: 8, bossXP: 100,
 };

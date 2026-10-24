@@ -10,15 +10,34 @@ import { ZombieBase, ZombieContext, ZombieKind } from './ZombieBase';
 export class ZombieSpawner {
     readonly enemies: ZombieBase[] = [];
     private candidates: PointXZ[] = [];
-    private cooldown = 4;
-    private audioPhase=0;
+    private cooldown = S.baseSpawnInterval;
+    wave = 1;
+    waveSpawned = 0;
+    spawnedSinceBoss = 0;
+    nextBossWave = S.bossEveryWaves;
+    get exactSpawnBudget():number {return Math.min(Number.MAX_SAFE_INTEGER,S.baseSpawnBudget*Math.pow(S.waveGrowth,this.wave-1));}
+    get waveSpawnBudget():number {return Math.max(1,Math.ceil(this.exactSpawnBudget));}
+    get bossReady():boolean {return this.wave>=this.nextBossWave&&this.spawnedSinceBoss>=S.bossSpawnThreshold;}
+    spawnInterval(elapsed:number,pressure=0):number {
+        return Math.max(S.minSpawnInterval,S.baseSpawnInterval/(1+S.spawnGrowthPerMinute*Math.max(0,elapsed)/60)*(pressure>=60?.65:1));
+    }
+    private nextWave():void {this.wave++;this.waveSpawned=0;AudioManager.instance?.playSfx('horde_warning');}
+    bossStarted():void {this.spawnedSinceBoss=0;this.nextBossWave+=S.bossEveryWaves;}
+    bossDefeated():void {this.nextWave();}
+    captureWaves(){return {wave:this.wave,waveSpawned:this.waveSpawned,spawnedSinceBoss:this.spawnedSinceBoss,nextBossWave:this.nextBossWave,cooldown:this.cooldown};}
+    restoreWaves(state:ReturnType<ZombieSpawner['captureWaves']>|undefined,bossCount:number,bossAlive:boolean):void {
+        if(state){this.wave=state.wave;this.waveSpawned=state.waveSpawned;this.spawnedSinceBoss=state.spawnedSinceBoss;this.nextBossWave=state.nextBossWave;this.cooldown=state.cooldown;return;}
+        // Old checkpoints have no historical spawn counts: never infer them from kills.
+        this.wave=Math.max(1,bossCount*S.bossEveryWaves+(bossAlive?0:1));this.waveSpawned=0;this.spawnedSinceBoss=0;
+        this.nextBossWave=(bossCount+1)*S.bossEveryWaves;
+    }
     constructor(private parent: Node, private geometry: GeometryFactory, private context: ZombieContext) {
         for (let x = -16; x <= 16; x += 2) for (let z = -16; z <= 16; z += 2)
             if (!context.obstacles.some(o => overlaps({ x, z }, C.enemyRadius + .15, o))) this.candidates.push({ x, z });
         this.reset();
     }
     get alive(): number { return this.enemies.filter(e => e.active && !e.dead).length; }
-    private create(kind: ZombieKind, p: PointXZ, healthMultiplier = 1, damageMultiplier = 1): ZombieBase | null {
+    private create(kind: ZombieKind, p: PointXZ, healthMultiplier = 1, damageMultiplier = 1, countSpawn = true): ZombieBase | null {
         if (this.alive >= S.maxEnemies) return null;
         let enemy = this.enemies.find(e => !e.node.active && e.kind === kind);
         if (!enemy && this.enemies.length < S.maxEnemies) {
@@ -28,7 +47,8 @@ export class ZombieSpawner {
         // Preserve the node budget even when the available pool has a different mix.
         if (!enemy) enemy = this.enemies.find(e => !e.node.active);
         if (!enemy) return null;
-        enemy.reset(p, healthMultiplier, damageMultiplier); enemy.investigate(this.context.player.position); return enemy;
+        enemy.reset(p, healthMultiplier, damageMultiplier); enemy.investigate(this.context.player.position);
+        if(countSpawn){this.waveSpawned++;this.spawnedSinceBoss++;}return enemy;
     }
     spawn(elapsed: number, random: () => number = Math.random): ZombieBase | null {
         if (this.alive >= S.maxEnemies) return null;
@@ -47,26 +67,23 @@ export class ZombieSpawner {
         }
         return null;
     }
-    tick(dt: number, elapsed: number, pressure = 0): void {
-        const wave=Math.min(4,Math.floor(elapsed/S.phaseSeconds));
-        if(wave>this.audioPhase)AudioManager.instance?.playSfx('horde_warning');
-        this.audioPhase=wave;
+    tick(dt: number, elapsed: number, pressure = 0, bossAlive = false): void {
+        // Spawn-completion waves; milestones remain pending until their boss is defeated.
+        if(!bossAlive&&this.wave<this.nextBossWave&&this.waveSpawned>=this.waveSpawnBudget)this.nextWave();
         this.cooldown -= dt;
         if (this.cooldown > 0) return;
-        const phase = Math.min(4, Math.floor(elapsed / S.phaseSeconds));
-        this.cooldown = S.spawnIntervals[phase] * (pressure >= 60 ? .65 : 1);
+        this.cooldown = this.spawnInterval(elapsed,pressure);
         this.spawn(elapsed);
     }
     restoreCheckpoint(states: {kind:ZombieKind;x:number;z:number;hp:number;max:number}[], elapsed:number):void {
-        this.audioPhase=Math.min(4,Math.floor(elapsed/S.phaseSeconds));
         // Rebuild only when loading a checkpoint; ordinary spawns keep their pool.
         this.enemies.forEach(e=>e.node.destroy());this.enemies.length=0;
-        this.cooldown=S.spawnIntervals[Math.min(4,Math.floor(elapsed/S.phaseSeconds))];
-        for(const state of states){const enemy=this.create(state.kind,state,state.max/C[state.kind].hp,1+Math.min(4,Math.floor(elapsed/S.phaseSeconds))*.15);if(enemy)enemy.health.current=state.hp;}
+        this.cooldown=this.spawnInterval(elapsed);
+        for(const state of states){const enemy=this.create(state.kind,state,state.max/C[state.kind].hp,1+Math.min(4,Math.floor(elapsed/S.phaseSeconds))*.15,false);if(enemy)enemy.health.current=state.hp;}
     }
     reset(): void {
-        this.audioPhase=0;
-        this.enemies.forEach(e => e.node.active = false); this.cooldown = S.spawnIntervals[0];
+        this.wave=1;this.waveSpawned=0;this.spawnedSinceBoss=0;this.nextBossWave=S.bossEveryWaves;
+        this.enemies.forEach(e => e.node.active = false); this.cooldown = S.baseSpawnInterval;
         const initial: [ZombieKind, number, number][] = [['walker', -6, 2], ['walker', 0, -7], ['walker', 6, -2], ['runner', -3, 7], ['walker', 4, -7]];
         for (const [kind, x, z] of initial) this.create(kind, { x, z });
     }

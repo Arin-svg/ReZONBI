@@ -1,3 +1,4 @@
+import { SurvivalConfig as S } from '../core/GameConfig';
 import { Color, EventTouch, Graphics, Label, Node, UITransform, Widget } from 'cc';
 import type { CombatEncounter } from '../core/CombatEncounter';
 import { label, panel, pin, typography, ui } from './ExplorationHUD';
@@ -40,7 +41,7 @@ export class CombatHUD {
         this.healthText = hp.getComponentInChildren(Label)!; this.healthText.node.setPosition(35, 14, 0);this.healthText.fontSize=16;this.healthText.node.getComponent(UITransform)!.setContentSize(210,26);typography(this.healthText,'label');
         artwork(hp, 'ui/rin-portrait', 62, 62).setPosition(-110, 0, 0);
         const bar = ui(hp, 'Health bar', 200, 10); bar.setPosition(35, -10, 0); this.healthFill = bar.addComponent(Graphics);
-        const count = label(safe, 'Enemy count', '', 200, 54, 18);
+        const count = label(safe, 'Enemy count', '', 200, 54, 13);
         const countWidget = count.addComponent(Widget); countWidget.isAlignHorizontalCenter = true; countWidget.isAlignTop = true; countWidget.top = 24; countWidget.alignMode = Widget.AlignMode.ALWAYS;
         this.count = count.getComponentInChildren(Label)!;typography(this.count,'label');
         const xp = label(safe, 'Experience', '', 300, 30, 13);
@@ -130,7 +131,9 @@ export class CombatHUD {
             this.healthFill.clear(); this.healthFill.fillColor = new Color(41, 36, 61); this.healthFill.rect(-100, -5, 200, 10); this.healthFill.fill();
             this.healthFill.fillColor = new Color(213, 106, 145); this.healthFill.rect(-100, -5, 200 * hp.current / hp.maximum, 10); this.healthFill.fill();
         }
-        text(this.count, `HORDE  ${Math.floor(e.elapsed / 60)}:${('0' + Math.floor(e.elapsed % 60)).slice(-2)}\nINFECTED  ${e.spawner.alive}`);
+        const bossAlive=e.bosses.some(b=>b.active&&!b.dead);
+        const status=`${!bossAlive&&e.spawner.bossReady?'BOSS READY':!bossAlive&&e.spawner.wave>=e.spawner.nextBossWave?'BOSS WAIT':'NEXT BOSS'}: ${e.spawner.spawnedSinceBoss} / ${S.bossSpawnThreshold}`;
+        text(this.count, `WAVE ${e.spawner.wave} · ${Math.floor(e.elapsed / 60)}:${('0' + Math.floor(e.elapsed % 60)).slice(-2)}\nINFECTED ${e.spawner.alive}${bossAlive?' · BOSS':''}\n${status}`);
         text(this.knife, e.combat.knifeCooldown > 1e-6 ? `${Math.ceil(e.combat.knifeCooldown)}s` : 'SLASH / K');
         this.knife.color = e.combat.knifeCooldown > 1e-6 ? new Color(130,125,148) : new Color(255,171,214);
         text(this.dodge, e.combat.dodgeCooldown > 0 ? `${e.combat.dodgeCooldown.toFixed(1)}s` : 'SPACE');

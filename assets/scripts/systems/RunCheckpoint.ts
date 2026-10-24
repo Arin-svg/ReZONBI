@@ -1,9 +1,10 @@
 import type { CombatEncounter } from '../core/CombatEncounter';
 import { Skills } from './Progression';
-import { CombatConfig } from '../core/GameConfig';
+import { CombatConfig, SurvivalConfig as S } from '../core/GameConfig';
+import type { ZombieSpawner } from '../enemies/ZombieSpawner';
 
 export function captureRun(e:CombatEncounter) {
-    return {version:1,elapsed:e.elapsed,kills:e.kills,bossCount:e.bossCount,
+    return {version:1,elapsed:e.elapsed,kills:e.kills,bossCount:e.bossCount,waves:e.spawner.captureWaves() as ReturnType<ZombieSpawner['captureWaves']>|undefined,
         player:{x:e.player.node.position.x,z:e.player.node.position.z,hp:e.health.state.current},
         level:e.progression.level,xp:e.progression.xp,pending:e.progression.pending,levels:{...e.progression.levels},noise:e.noise.pressure,
         cooldowns:[e.combat.pistolCooldown,e.combat.knifeCooldown,e.combat.dodgeCooldown],
@@ -23,6 +24,9 @@ export function parseRun(raw:string|null):RunCheckpoint|null {
         if(!Array.isArray(s.enemies)||s.enemies.length>24||!s.enemies.every((b:any)=>pos(b)&&['walker','runner'].indexOf(b.kind)>=0&&finite(b.max,1)&&finite(b.hp,1,b.max)))return null;
         if(!Array.isArray(s.bosses)||s.bosses.length>s.bossCount||!s.bosses.every((b:any)=>pos(b)&&finite(b.strength,1)&&finite(b.hp,1,Math.round(1800*b.strength))))return null;
         if(!Array.isArray(s.pickups)||s.pickups.length>64||!s.pickups.every((p:any)=>pos(p)&&finite(p.value,1)))return null;
+        if(s.waves!==undefined){const w=s.waves;
+            if(!w||!Number.isInteger(w.wave)||!finite(w.wave,1,1e6)||!Number.isInteger(w.waveSpawned)||!finite(w.waveSpawned,0,Number.MAX_SAFE_INTEGER)||!Number.isInteger(w.spawnedSinceBoss)||!finite(w.spawnedSinceBoss,0,Number.MAX_SAFE_INTEGER)||w.spawnedSinceBoss<w.waveSpawned&&s.bosses.length===0||w.nextBossWave!==(s.bossCount+1)*S.bossEveryWaves||!finite(w.cooldown,0,S.baseSpawnInterval))return null;
+        }
         return s;
     }catch{return null;}
 }
@@ -33,5 +37,6 @@ export function restoreRun(e:CombatEncounter,s:RunCheckpoint):void {
     for(const skill of Skills)if(s.levels[skill.id])e.progression.levels[skill.id]=s.levels[skill.id];
     e.noise.pressure=s.noise;[e.combat.pistolCooldown,e.combat.knifeCooldown,e.combat.dodgeCooldown]=s.cooldowns;
     e.spawner.restoreCheckpoint(s.enemies,s.elapsed);e.restoreBossCheckpoint(s.bosses);
+    e.spawner.restoreWaves(s.waves,s.bossCount,s.bosses.length>0);
     for(const item of s.pickups)e.pickups.drop(item,item.value);
 }

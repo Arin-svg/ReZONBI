@@ -346,6 +346,7 @@ export class CombatEncounter extends Component {
                             enemy.position,
                             S.bossXP
                         );
+                    if(!this.bosses.some(boss=>boss.active&&!boss.dead))this.spawner.bossDefeated();
                     this.ui?.stageClear(S.bossXP);
                     },
                 },
@@ -587,15 +588,12 @@ export class CombatEncounter extends Component {
                     this.spawner.tick(
                         dt,
                         this.elapsed,
-                        this.noise.pressure
+                        this.noise.pressure,
+                        this.bosses.some(boss=>boss.active&&!boss.dead)
                     );
                 }
 
-                if (
-                    this.elapsed + 1e-6 >= S.bossTime * (this.bossCount + 1)
-                ) {
-                    this.spawnBoss();
-                }
+                if (this.spawner.bossReady) this.spawnBoss();
 
                 this.health.state.tick(dt);
                 this.combat.tick(dt);
@@ -674,6 +672,7 @@ export class CombatEncounter extends Component {
     }
 
     spawnBoss(): void {
+        if(this.paused||this.selecting||this.state!=='playing'||!this.spawner.bossReady||this.bosses.some(b=>b.active&&!b.dead))return;
 
         const player =
             this.player.node.position;
@@ -708,8 +707,9 @@ export class CombatEncounter extends Component {
 
         this.boss = this.bosses.find(boss => !boss.active) ?? this.createBoss();
         const strength = Math.pow(S.bossStrengthMultiplier, this.bossCount);
-        this.bossCount++;
         this.boss.resetBoss(position, strength);
+        this.bossCount++;
+        this.spawner.bossStarted();
         AudioManager.instance?.playSfx('boss_spawn');
     }
 
