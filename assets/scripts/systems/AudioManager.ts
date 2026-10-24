@@ -7,6 +7,7 @@ export const MUSIC = {
 };
 export const SOUNDS = 'gunshot bullet_impact reload melee_slash electric_pulse bloodlust zombie_groan zombie_attack zombie_hit zombie_death rin_hurt dodge rin_death exp_pickup upgrade_selected level_up ui_click ui_confirm ui_back pause boss_spawn boss_attack boss_phase boss_defeat horde_warning low_hp high_noise'.split(' ');
 const KEY = 'rezonbi.audio.v1';
+const SOUND_FILES: {[key:string]:string} = {gunshot:'bullet', exp_pickup:'pick up', electric_pulse:'faespencer-high-voltage-spark-486895'};
 const LIMITS: {[key:string]:number} = {gunshot:.09, bullet_impact:.12, zombie_hit:.18, zombie_death:.3, zombie_attack:.6, zombie_groan:9, exp_pickup:.12, bloodlust:2, low_hp:12, high_noise:18, horde_warning:15, level_jingle:1};
 type Channel = 'music'|'sfx';
 
@@ -40,7 +41,7 @@ export class AudioManager {
             if(this.disposed)return;
             if(error||!bundle){console.warn('Audio bundle unavailable',error);return;}
             const paths=Object.keys(MUSIC).map(k=>'bgm/'+MUSIC[k as keyof typeof MUSIC])
-                .concat(['bgm/futuristic level up jingle'],SOUNDS.map(s=>'sfx/'+s));
+                .concat(['bgm/futuristic level up jingle'],SOUNDS.map(s=>'sfx/'+(SOUND_FILES[s]||s)));
             let index=0;
             // Serial loading keeps mobile decode/memory spikes bounded.
             const next=()=>{if(this.disposed||index===paths.length)return;
@@ -66,7 +67,7 @@ export class AudioManager {
     playSfx(name:string):void {
         if(this.disposed||this.suspended||this.sfxMuted||this.sfx===0)return;
         if((this.cooldowns.get(name)||0)>this.time)return;
-        const clip=name==='level_jingle'?(this.clips.get('bgm/futuristic level up jingle')||this.clips.get('sfx/level_up')):this.clips.get('sfx/'+name);
+        const clip=name==='level_jingle'?(this.clips.get('bgm/futuristic level up jingle')||this.clips.get('sfx/level_up')):this.clips.get('sfx/'+(SOUND_FILES[name]||name));
         if(!clip)return; // Never queue stale combat sounds while assets load.
         const important=/^(boss_|rin_death|level_jingle|upgrade_selected|ui_|pause)/.test(name);
         // Reserve one voice for progression, boss cues and UI feedback.

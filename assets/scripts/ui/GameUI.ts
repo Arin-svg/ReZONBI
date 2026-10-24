@@ -3,7 +3,7 @@ import { BlockInputEvents, Color, EventTouch, Vec3, director, game, Graphics, La
 import type { CombatEncounter } from '../core/CombatEncounter';
 import { captureRun, parseRun, restoreRun } from '../systems/RunCheckpoint';
 import { action, artwork, copy, entrance, heading, stretch } from './CyberWidgets';
-import { label, panel, pin, ui } from './ExplorationHUD';
+import { label, panel, pin, typography, ui } from './ExplorationHUD';
 
 type Page='home'|'game'|'pause'|'settings'|'tutorial'|'defeat'|'victory'|'confirm'|'dialogue'|'stats';
 export type Notice='Supply Found'|'Ammo Low'|'Health Low'|'Skill Ready'|'Door Locked'|'Item Obtained'|'Objective Updated'|'Area Cleared'|'Save Point';
@@ -21,6 +21,7 @@ export class GameUI {
     private safe:Node;
     private map:Graphics;
     private toast:Node;
+    private toastTitle:Node;
     private prompt:Node;
     private toastTime=0;
     private mapTime=0;
@@ -48,6 +49,8 @@ export class GameUI {
         const minimap=ui(e.hud.node,'Minimap',128,128);pin(minimap,'right','top',94,20);this.map=minimap.addComponent(Graphics);
         const blocks=e.combat.blocksMouse;e.combat.blocksMouse=p=>blocks(p)||minimap.getComponent(UITransform)!.hitTest(p);
         this.toast=label(e.hud.node,'Notification','',390,62,18);panel(this.toast,390,62);pin(this.toast,'left','top',24,195);this.toast.active=false;
+        const detail=this.toast.getComponentInChildren(Label)!;detail.fontSize=15;detail.lineHeight=18;detail.node.getComponent(UITransform)!.setContentSize(362,36);detail.node.setPosition(0,-12);
+        this.toastTitle=label(this.toast,'Notification heading','',362,22,16);this.toastTitle.setPosition(0,18);typography(this.toastTitle.getComponentInChildren(Label)!,'label');
         this.prompt=label(e.hud.node,'Interaction prompt','',240,58,19);panel(this.prompt,240,58);this.prompt.setPosition(0,-100);this.prompt.active=false;
         this.popup=label(e.hud.node,'Item popup','',240,56,18);panel(this.popup,240,56);pin(this.popup,'right','top',24,205);this.popup.active=false;
         this.overlay=ui(this.safe,'Game screens',1280,720);stretch(this.overlay);this.overlay.addComponent(BlockInputEvents);
@@ -115,12 +118,12 @@ export class GameUI {
                 this.button('RETURN TO HOMEPAGE',-160,()=>this.confirm('Save this checkpoint and return home?',()=>this.home(),'pause'),false,true,frame);
             }else if(page==='defeat'){
                 artwork(frame,'ui/rin-portrait',145,145).setPosition(0,160);heading(frame,'RIN HAS FALLEN',45,35);
-                heading(frame,`LEVEL ${this.e.progression.level}   /   ${this.e.kills} KILLS\nSURVIVED ${this.time()}`,-20,20);
+                heading(frame,`Level ${this.e.progression.level}  ?  ${this.e.kills} kills\nSurvived ${this.time()}`,-20,20);
                 this.button('RESTART ENCOUNTER',-115,()=>this.start(),true,true,frame);
                 this.button('RETURN TO HOMEPAGE',-195,()=>this.home(),false,true,frame);
             }else if(page==='victory'){
                 heading(frame,'STAGE CLEAR',190,46);heading(frame,'TYRANT DEFEATED',132,18);
-                heading(frame,`TIME  ${this.time()}\nKILLS  ${this.e.kills}\nREWARD  ${this.pendingClear} EXP DROPPED`,25,23);
+                heading(frame,`TIME  ${this.time()}  ?  KILLS  ${this.e.kills}\n\nREWARD DROP\n${this.pendingClear} EXP`,25,21);
                 this.button('NEXT STAGE',-105,()=>{this.pendingClear=0;this.show('game');this.notify('Objective Updated','Keep going!');},true,true,frame);
                 this.button('RETURN TO HOMEPAGE',-185,()=>{this.pendingClear=0;this.home();},false,true,frame);
             }else if(page==='settings'){
@@ -181,7 +184,7 @@ export class GameUI {
         if(this.previousSlash>0&&e.combat.knifeCooldown<=0)this.notify('Skill Ready','Area slash is ready. Tap the knife.');
         this.previousHP=e.health.state.current;this.previousSlash=e.combat.knifeCooldown;
         this.saveTime+=dt;if(this.saveTime>=15){this.saveTime=0;this.save();}
-        this.toastTime-=dt;if(this.toastTime<=0){const n=this.notices.shift();this.toast.active=!!n;if(n){copy(this.toast,n.title.toUpperCase()+'\n'+n.detail);this.toastTime=3;entrance(this.toast);}}
+        this.toastTime-=dt;if(this.toastTime<=0){const n=this.notices.shift();this.toast.active=!!n;if(n){copy(this.toastTitle,n.title.toUpperCase());copy(this.toast,n.detail);this.toastTime=3;entrance(this.toast);}}
         this.popupTime-=dt;this.popup.active=this.popupTime>0;
     }
     private syncMusic():void {
@@ -191,7 +194,7 @@ export class GameUI {
     }
     private audioSlider(parent:Node,channel:'music'|'sfx',y:number):void {
         const row=ui(parent,channel+' volume',420,62);row.setPosition(0,y);
-        const title=label(row,channel+' percentage','',270,25,16);title.setPosition(-55,20);
+        const title=label(row,channel+' percentage','',270,25,16);title.setPosition(-55,20);typography(title.getComponentInChildren(Label)!,'label');
         const track=ui(row,channel+' slider',250,36);track.setPosition(-55,-10);const g=track.addComponent(Graphics);
         const mute=action(row,channel+' mute','',-3,()=>{this.audio.toggleMute(channel);draw();},false,true,110);mute.setPosition(160,-3);
         const draw=()=>{

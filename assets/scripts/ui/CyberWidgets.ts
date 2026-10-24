@@ -1,6 +1,6 @@
 import { AudioManager } from '../systems/AudioManager';
 import { Color, EventTouch, Graphics, isValid, Label, Node, resources, Sprite, SpriteFrame, Texture2D, tween, Tween, UIOpacity, UITransform, Vec3, Widget } from 'cc';
-import { label, panel, ui } from './ExplorationHUD';
+import { label, panel, typography, ui } from './ExplorationHUD';
 
 export function stretch(node:Node):void {
     const w=node.addComponent(Widget);w.isAlignLeft=w.isAlignRight=w.isAlignTop=w.isAlignBottom=true;
@@ -8,10 +8,14 @@ export function stretch(node:Node):void {
 }
 export function copy(node:Node,value:string):void { const l=node.getComponentInChildren(Label);if(l&&l.string!==value)l.string=value; }
 export function heading(parent:Node,text:string,y:number,size=30):Node {
-    const n=label(parent,'Heading '+text,text,540,Math.max(65,text.split('\n').length*(size+7)),size);n.setPosition(0,y);const l=n.getComponentInChildren(Label)!;l.isBold=true;return n;
+    const n=label(parent,'Heading '+text,text,540,Math.max(65,text.split('\n').length*(size+7)),size);n.setPosition(0,y);const l=n.getComponentInChildren(Label)!;
+    typography(l,size>=28?'display':text===text.toUpperCase()?'label':'body');return n;
 }
 export function action(parent:Node,name:string,text:string,y:number,click:()=>void,primary=false,enabled=true,width=330):Node {
     const n=label(parent,name,text,width,58,21);n.setPosition(0,y);panel(n,width,58);
+    const caption=n.getComponentInChildren(Label)!;
+    caption.fontSize=Math.min(21,Math.floor((width-36)/(Math.max(1,text.length)*.62)));
+    caption.node.getComponent(UITransform)!.setContentSize(width-32,42);typography(caption,'label');
     if(primary){const g=n.getChildByName('Panel')!.getComponent(Graphics)!;g.fillColor=new Color(221,0,75,245);g.moveTo(-width/2+16,-25);g.lineTo(width/2-10,-25);g.lineTo(width/2,25);g.lineTo(-width/2+26,25);g.close();g.fill();g.strokeColor=new Color(255,100,163);g.lineWidth=2;g.stroke();}
     n.getComponentInChildren(Label)!.color=new Color().fromHEX(enabled?'#FFF0F7':'#627084');
     if(!enabled)return n;

@@ -14,10 +14,19 @@ export function pin(node: Node, horizontal: 'left' | 'right', vertical: 'top' | 
     widget.left = widget.right = x; widget.top = widget.bottom = y;
     widget.alignMode = Widget.AlignMode.ALWAYS;
 }
+/** System families need no font download and retain platform glyph fallback. */
+export function typography(text: Label, role: 'display' | 'label' | 'body' = 'body'): void {
+    text.useSystemFont = true;
+    text.fontFamily = role === 'body' ? 'sans-serif' : 'monospace';
+    text.isBold = role !== 'body';
+    text.lineHeight = Math.ceil(text.fontSize * (role === 'body' ? 1.35 : 1.2));
+    text.enableWrapText = role === 'body';
+    // Cocos spacingX applies to bitmap fonts, so system text uses natural tracking.
+}
 export function label(parent: Node, name: string, text: string, width: number, height: number, size: number): Node {
     const node = ui(parent, name, width, height);
     const textNode = ui(node, 'Text', width, height); const l = textNode.addComponent(Label);
-    l.string = text; l.fontSize = size; l.lineHeight = size + 6;
+    l.string = text; l.fontSize = size; typography(l);
     l.color = new Color().fromHEX(P.white); l.horizontalAlign = Label.HorizontalAlign.CENTER;
     l.overflow = Label.Overflow.SHRINK;
     l.cacheMode = Label.CacheMode.BITMAP;

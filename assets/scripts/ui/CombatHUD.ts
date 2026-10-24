@@ -1,6 +1,6 @@
 import { Color, EventTouch, Graphics, Label, Node, UITransform, Widget } from 'cc';
 import type { CombatEncounter } from '../core/CombatEncounter';
-import { label, panel, pin, ui } from './ExplorationHUD';
+import { label, panel, pin, typography, ui } from './ExplorationHUD';
 import { icon, disc, Accent } from './VisualTheme';
 import { artwork, stretch } from './CyberWidgets';
 import { Skills } from '../systems/Progression';
@@ -37,19 +37,19 @@ export class CombatHUD {
         const safe = scene.getChildByName('Mobile Canvas')!.getChildByName('Safe area')!;
         safe.getChildByName('Area heading')!.active = false; safe.getChildByName('Movement hint')!.active = false;
         const hp = label(safe, 'Player health', '', 300, 72, 18); panel(hp, 300, 72); pin(hp, 'left', 'top', 24, 20);
-        this.healthText = hp.getComponentInChildren(Label)!; this.healthText.node.setPosition(35, 14, 0);
+        this.healthText = hp.getComponentInChildren(Label)!; this.healthText.node.setPosition(35, 14, 0);this.healthText.fontSize=16;this.healthText.node.getComponent(UITransform)!.setContentSize(210,26);typography(this.healthText,'label');
         artwork(hp, 'ui/rin-portrait', 62, 62).setPosition(-110, 0, 0);
         const bar = ui(hp, 'Health bar', 200, 10); bar.setPosition(35, -10, 0); this.healthFill = bar.addComponent(Graphics);
         const count = label(safe, 'Enemy count', '', 200, 54, 18);
         const countWidget = count.addComponent(Widget); countWidget.isAlignHorizontalCenter = true; countWidget.isAlignTop = true; countWidget.top = 24; countWidget.alignMode = Widget.AlignMode.ALWAYS;
-        this.count = count.getComponentInChildren(Label)!;
+        this.count = count.getComponentInChildren(Label)!;typography(this.count,'label');
         const xp = label(safe, 'Experience', '', 300, 30, 13);
         const xw = xp.addComponent(Widget); xw.isAlignLeft = xw.isAlignTop = true; xw.left = 24; xw.top = 92; xw.alignMode = Widget.AlignMode.ALWAYS;
-        this.xpText = xp.getComponentInChildren(Label)!; this.xpText.node.setPosition(0, 9, 0);
+        this.xpText = xp.getComponentInChildren(Label)!; this.xpText.node.setPosition(0, 9, 0);typography(this.xpText,'label');
         const fill = ui(xp, 'EXP fill', 260, 8); fill.setPosition(0, -6, 0); this.xpFill = fill.addComponent(Graphics);
         const boss = label(safe, 'Boss health', 'SIGNAL TYRANT', 380, 42, 18);
         const bw = boss.addComponent(Widget); bw.isAlignHorizontalCenter = bw.isAlignTop = true; bw.top = 128; bw.alignMode = Widget.AlignMode.ALWAYS;
-        this.bossText = boss.getComponentInChildren(Label)!; boss.active = false;
+        this.bossText = boss.getComponentInChildren(Label)!; boss.active = false;typography(this.bossText,'display');
         this.bossText.node.setPosition(0, 9, 0);
         this.bossText.node.getComponent(UITransform)!.setContentSize(380, 26);
         const bf = ui(boss, 'Boss fill', 340, 10); bf.setPosition(0, -12, 0); this.bossFill = bf.addComponent(Graphics);
@@ -57,7 +57,7 @@ export class CombatHUD {
         const knife = label(safe, 'Knife button', '', 100, 100, 13); disc(knife, 46, '#B5A0FF'); icon(knife, 'knife', 42).setPosition(0, 7, 0); pin(knife, 'right', 'bottom', 164, 28);
         const dodge = label(safe, 'Dodge button', '', 100, 100, 13); disc(dodge, 46, '#79BFFF'); icon(dodge, 'shadow', 42).setPosition(0, 7, 0); pin(dodge, 'right', 'bottom', 28, 28);
         this.pistol = pistol.getComponentInChildren(Label)!; this.knife = knife.getComponentInChildren(Label)!; this.dodge = dodge.getComponentInChildren(Label)!;
-        for (const l of [this.pistol, this.knife, this.dodge]) l.node.setPosition(0, -29, 0); this.pistol.string = 'HOLD';
+        for (const l of [this.pistol, this.knife, this.dodge]) { l.node.setPosition(0, -29, 0);typography(l,'label'); } this.pistol.string = 'HOLD';
         this.bind(pistol, () => encounter.combat.setFire('touch-pistol', true), () => encounter.combat.setFire('touch-pistol', false));
         this.bind(knife, () => encounter.combat.knife()); this.bind(dodge, () => encounter.combat.dodge());
         const pause = safe.getChildByName('Pause button')!; pause.off(Node.EventType.TOUCH_END);
@@ -121,12 +121,12 @@ export class CombatHUD {
             strip(340*bossFraction,new Color(250,78,99));
         }
         if (key !== this.xpKey) {
-            this.xpKey = key; text(this.xpText, `LEVEL ${progress.level}    EXP ${progress.xp} / ${requiredXP(progress.level)}`);
+            this.xpKey = key; text(this.xpText, `LV ${progress.level}  ?  EXP ${progress.xp} / ${requiredXP(progress.level)}`);
             this.xpFill.clear(); this.xpFill.fillColor = new Color(41, 36, 61); this.xpFill.rect(-130, -4, 260, 8); this.xpFill.fill();
             this.xpFill.fillColor = new Color(85, 217, 239); this.xpFill.rect(-130, -4, 260 * progress.xp / requiredXP(progress.level), 8); this.xpFill.fill();
         }
         if (hp.current !== this.lastHP || this.healthText.string.indexOf(`LV ${progress.level} `) < 0) {
-            this.lastHP = hp.current; text(this.healthText, `RIN  /  LV ${progress.level}   ${Math.ceil(hp.current)}`);
+            this.lastHP = hp.current; text(this.healthText, `RIN ? LV ${progress.level}  ${Math.ceil(hp.current)} HP`);
             this.healthFill.clear(); this.healthFill.fillColor = new Color(41, 36, 61); this.healthFill.rect(-100, -5, 200, 10); this.healthFill.fill();
             this.healthFill.fillColor = new Color(213, 106, 145); this.healthFill.rect(-100, -5, 200 * hp.current / hp.maximum, 10); this.healthFill.fill();
         }

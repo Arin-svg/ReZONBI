@@ -11,7 +11,9 @@ const box={exports:{},require:()=>cc,console:{warn(){}}};vm.runInNewContext(ts.t
 const {AudioManager,MUSIC,SOUNDS}=box.exports;
 let a=new AudioManager(new Node());const step=(n=12)=>{for(let i=0;i<n;i++)a.tick(.1);};
 assert.equal(a.music,.65);assert.equal(a.sfx,.85);assert.equal(sources.length,7);
-for(const p of loads){const ext=p.startsWith('bgm/')?'.mp3':'.wav';assert.ok(fs.statSync(path.join('assets/audio',p+ext)).size>44,p);const meta=JSON.parse(fs.readFileSync(path.join('assets/audio',p+ext+'.meta')));assert.equal(meta.importer,'audio-clip');}
+for(const p of loads){const ext=(p.startsWith('bgm/')||p==='sfx/bullet'||p==='sfx/pick up'||p==='sfx/faespencer-high-voltage-spark-486895')?'.mp3':'.wav';assert.ok(fs.statSync(path.join('assets/audio',p+ext)).size>44,p);const meta=JSON.parse(fs.readFileSync(path.join('assets/audio',p+ext+'.meta')));assert.equal(meta.importer,'audio-clip');}
+assert.ok(loads.includes('sfx/bullet'));assert.ok(loads.includes('sfx/pick up'));assert.ok(!loads.includes('sfx/gunshot'));assert.ok(!loads.includes('sfx/exp_pickup'));
+assert.ok(loads.includes('sfx/faespencer-high-voltage-spark-486895'));assert.ok(!loads.includes('sfx/electric_pulse'));
 assert.equal(SOUNDS.length,27);assert.equal(loads.length,33);
 const bgm=sources[0];a.musicState('home');step();assert.equal(bgm.clip.path,'bgm/'+MUSIC.home);assert.equal(bgm.loop,true);assert.equal(bgm.volume,.65);
 const played=bgm.plays;for(let i=0;i<30;i++){a.musicState('home');a.tick(.1);}assert.equal(bgm.plays,played,'same track must not restart');
