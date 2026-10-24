@@ -19,13 +19,18 @@ export function label(parent: Node, name: string, text: string, width: number, h
     const textNode = ui(node, 'Text', width, height); const l = textNode.addComponent(Label);
     l.string = text; l.fontSize = size; l.lineHeight = size + 6;
     l.color = new Color().fromHEX(P.white); l.horizontalAlign = Label.HorizontalAlign.CENTER;
+    l.overflow = Label.Overflow.SHRINK;
+    l.cacheMode = Label.CacheMode.BITMAP;
     l.verticalAlign = Label.VerticalAlign.CENTER; return node;
 }
 export function panel(node: Node, width: number, height: number): void {
     const background = ui(node, 'Panel', width, height); background.setSiblingIndex(0);
-    const g = background.addComponent(Graphics); g.fillColor = new Color(23, 29, 48, 224);
-    g.roundRect(-width / 2, -height / 2, width, height, 12); g.fill();
-    g.strokeColor = new Color().fromHEX(P.concrete); g.lineWidth = 2; g.stroke();
+    const g = background.addComponent(Graphics); g.fillColor = new Color(8, 13, 26, 238);
+    const x=width/2,y=height/2,c=12;
+    g.moveTo(-x+c,-y);g.lineTo(x,-y);g.lineTo(x,y-c);g.lineTo(x-c,y);g.lineTo(-x,y);g.lineTo(-x,-y+c);g.close();g.fill();
+    g.strokeColor = new Color(89,111,139,170); g.lineWidth = 1; g.stroke();
+    g.strokeColor = new Color().fromHEX('#F42678');g.lineWidth=2;g.moveTo(-x+c,-y);g.lineTo(-x+width*.36,-y);g.stroke();
+    g.strokeColor = new Color().fromHEX('#45CEE4');g.lineWidth=1;g.moveTo(x-38,y);g.lineTo(x-c,y);g.stroke();
 }
 
 export function buildExplorationHUD(parent: Node, player: PlayerController): MobileJoystick {
@@ -50,7 +55,7 @@ export function buildExplorationHUD(parent: Node, player: PlayerController): Mob
     const joystickNode = ui(safe, 'Movement joystick', 184, 184); pin(joystickNode, 'left', 'bottom', 32, 32);
     const base = joystickNode.addComponent(Graphics);
     base.fillColor = new Color(23, 29, 48, 155); base.circle(0, 0, 86); base.fill();
-    base.lineWidth = 3; base.strokeColor = new Color(103, 183, 198, 155); base.stroke();
+    base.lineWidth = 2; base.strokeColor = new Color(244, 38, 120, 195); base.stroke();
     base.lineWidth = 1; base.circle(0, 0, 68); base.stroke();
     const thumb = ui(joystickNode, 'Thumb', 64, 64); const tg = thumb.addComponent(Graphics);
     tg.fillColor = new Color(154, 178, 201, 210); tg.circle(0, 0, 29); tg.fill();

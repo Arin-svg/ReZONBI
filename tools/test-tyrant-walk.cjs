@@ -30,7 +30,7 @@ class Material {
     destroy() {}
 }
 class MeshRenderer { setSharedMaterial() {} }
-const cc = {Node,Color,Vec3,Vec4,Material,MeshRenderer,utils:{createMesh:()=>({destroy(){}})}};
+const cc = {isValid:n=>!n.destroyed,Node,Color,Vec3,Vec4,Material,MeshRenderer,utils:{createMesh:()=>({destroy(){}})}};
 const compile = file => ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
 const config = {exports:{}};
 vm.runInNewContext(compile('assets/scripts/core/GameConfig.ts'),config);
@@ -77,3 +77,16 @@ for(const bootstrap of bootstraps) {
     assert.equal(bootstrap.bossWalkAtlas.__uuid__,meta.subMetas['6c48a'].uuid);
 }
 console.log('PASS Tyrant walk: eight frames, UV bounds, pause, idle, charge cadence, death/reset, fallback, zombie atlas and scene bindings');
+
+for(const parentAlreadyDestroyed of [false,true]) {
+    const cleanup=make('walker',null);let roots=0,meshes=0,materials=0;
+    cleanup.root.destroyed=parentAlreadyDestroyed;
+    cleanup.root.destroy=()=>{roots++;cleanup.root.destroyed=true;};
+    cleanup.mesh.destroy=()=>meshes++;
+    cleanup.material.destroy=()=>materials++;
+    Object.defineProperty(cleanup.renderer,'mesh',{set(){throw new Error('Cocos renderer already torn down');}});
+    assert.doesNotThrow(()=>cleanup.destroy());
+    assert.doesNotThrow(()=>cleanup.destroy());
+    assert.equal(roots,parentAlreadyDestroyed?0:1);assert.equal(meshes,1);assert.equal(materials,1);
+}
+console.log('PASS sprite cleanup: live root, parent teardown, no renderer mutation and idempotent asset release');

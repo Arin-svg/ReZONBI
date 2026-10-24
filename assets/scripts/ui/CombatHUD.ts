@@ -2,11 +2,13 @@ import { Color, EventTouch, Graphics, Label, Node, UITransform, Widget } from 'c
 import type { CombatEncounter } from '../core/CombatEncounter';
 import { label, panel, pin, ui } from './ExplorationHUD';
 import { icon, disc, Accent } from './VisualTheme';
+import { artwork, stretch } from './CyberWidgets';
 import { Skills } from '../systems/Progression';
 import { requiredXP } from '../systems/Progression';
 
 /** Extends the existing safe-area Canvas and joystick; no parallel input system. */
 export class CombatHUD {
+    readonly node: Node;
     private readonly owners = new Map<Node, number>();
     private healthText: Label;
     private healthFill: Graphics;
@@ -28,32 +30,29 @@ export class CombatHUD {
     private xpText: Label;
     private xpFill: Graphics;
     private xpKey = '';
-    private noiseText: Label;
     private bossText: Label;
     private bossFill: Graphics;
-    private noiseFill: Graphics;
     private lastBoss = -1;
-    private lastNoise = -1;
     constructor(scene: Node, private readonly encounter: CombatEncounter) {
         const safe = scene.getChildByName('Mobile Canvas')!.getChildByName('Safe area')!;
         safe.getChildByName('Area heading')!.active = false; safe.getChildByName('Movement hint')!.active = false;
         const hp = label(safe, 'Player health', '', 300, 72, 18); panel(hp, 300, 72); pin(hp, 'left', 'top', 24, 20);
         this.healthText = hp.getComponentInChildren(Label)!; this.healthText.node.setPosition(35, 14, 0);
-        icon(hp, 'portrait', 62).setPosition(-110, 0, 0);
+        artwork(hp, 'ui/rin-portrait', 62, 62).setPosition(-110, 0, 0);
         const bar = ui(hp, 'Health bar', 200, 10); bar.setPosition(35, -10, 0); this.healthFill = bar.addComponent(Graphics);
         const count = label(safe, 'Enemy count', '', 200, 54, 18);
         const countWidget = count.addComponent(Widget); countWidget.isAlignHorizontalCenter = true; countWidget.isAlignTop = true; countWidget.top = 24; countWidget.alignMode = Widget.AlignMode.ALWAYS;
         this.count = count.getComponentInChildren(Label)!;
-        const xp = label(safe, 'Experience', '', 360, 30, 13);
-        const xw = xp.addComponent(Widget); xw.isAlignHorizontalCenter = xw.isAlignBottom = true; xw.bottom = 12; xw.alignMode = Widget.AlignMode.ALWAYS;
+        const xp = label(safe, 'Experience', '', 300, 30, 13);
+        const xw = xp.addComponent(Widget); xw.isAlignLeft = xw.isAlignTop = true; xw.left = 24; xw.top = 92; xw.alignMode = Widget.AlignMode.ALWAYS;
         this.xpText = xp.getComponentInChildren(Label)!; this.xpText.node.setPosition(0, 9, 0);
-        const fill = ui(xp, 'EXP fill', 320, 8); fill.setPosition(0, -6, 0); this.xpFill = fill.addComponent(Graphics);
-        const noise = label(safe, 'Noise pressure', '', 200, 34, 12); const nw = noise.addComponent(Widget); nw.isAlignHorizontalCenter = nw.isAlignTop = true; nw.top = 76; nw.alignMode = Widget.AlignMode.ALWAYS; this.noiseText = noise.getComponentInChildren(Label)!;
-        this.noiseText.node.setPosition(0, 6, 0); const nf = ui(noise, 'Noise fill', 160, 5); nf.setPosition(0, -9, 0); this.noiseFill = nf.addComponent(Graphics);
-        const boss = label(safe, 'Boss health', '', 430, 56, 19); panel(boss, 430, 56);
-        const bw = boss.addComponent(Widget); bw.isAlignHorizontalCenter = bw.isAlignTop = true; bw.top = 112; bw.alignMode = Widget.AlignMode.ALWAYS;
+        const fill = ui(xp, 'EXP fill', 260, 8); fill.setPosition(0, -6, 0); this.xpFill = fill.addComponent(Graphics);
+        const boss = label(safe, 'Boss health', 'SIGNAL TYRANT', 380, 42, 18);
+        const bw = boss.addComponent(Widget); bw.isAlignHorizontalCenter = bw.isAlignTop = true; bw.top = 128; bw.alignMode = Widget.AlignMode.ALWAYS;
         this.bossText = boss.getComponentInChildren(Label)!; boss.active = false;
-        this.bossText.node.setPosition(0, 5, 0); const bf = ui(boss, 'Boss fill', 390, 5); bf.setPosition(0, -22, 0); this.bossFill = bf.addComponent(Graphics);
+        this.bossText.node.setPosition(0, 9, 0);
+        this.bossText.node.getComponent(UITransform)!.setContentSize(380, 26);
+        const bf = ui(boss, 'Boss fill', 340, 10); bf.setPosition(0, -12, 0); this.bossFill = bf.addComponent(Graphics);
         const pistol = label(safe, 'Pistol button', '', 116, 116, 13); disc(pistol, 56); icon(pistol, 'bullet', 52).setPosition(0, 8, 0); pin(pistol, 'right', 'bottom', 28, 140);
         const knife = label(safe, 'Knife button', '', 100, 100, 13); disc(knife, 46, '#B5A0FF'); icon(knife, 'knife', 42).setPosition(0, 7, 0); pin(knife, 'right', 'bottom', 164, 28);
         const dodge = label(safe, 'Dodge button', '', 100, 100, 13); disc(dodge, 46, '#79BFFF'); icon(dodge, 'shadow', 42).setPosition(0, 7, 0); pin(dodge, 'right', 'bottom', 28, 28);
@@ -73,13 +72,15 @@ export class CombatHUD {
         panel(this.guide, 360, 86); const guideWidget = this.guide.addComponent(Widget);
         guideWidget.isAlignHorizontalCenter = true; guideWidget.isAlignBottom = true; guideWidget.bottom = 52; guideWidget.alignMode = Widget.AlignMode.ALWAYS;
         for (let i = 0; i < Skills.length; i++) {
-            const slot = label(safe, 'Active skill ' + Skills[i].id, '', 34, 34, 11); pin(slot, 'left', 'top', 27 + i * 43, 102);
+            const slot = label(safe, 'Active skill ' + Skills[i].id, '', 34, 34, 11); pin(slot, 'left', 'top', 27 + i * 43, 128);
             disc(slot, 16, Accent[Skills[i].id]); icon(slot, Skills[i].id, 21).setPosition(0, 2, 0);
             const rank = slot.getComponentInChildren(Label)!; rank.node.setPosition(12, -11, 0); this.skillRanks.push(rank);
         }
-        const blocked = [hp, count, pistol, knife, dodge, pause, replay, this.result, this.guide, safe.getChildByName('Movement joystick')!];
-        blocked.push(xp, noise, boss);
-        encounter.combat.blocksMouse = p => encounter.selecting || blocked.some(n => n.activeInHierarchy && n.getComponent(UITransform)!.hitTest(p));
+        this.node = ui(safe, 'HUD layer', 1280, 720);stretch(this.node);
+        for (const child of [...safe.children]) if (child !== this.node) { child.removeFromParent(); this.node.addChild(child); }
+        const blocked = [hp, count, pistol, knife, dodge, pause, replay, this.result, this.guide, this.node.getChildByName('Movement joystick')!];
+        blocked.push(xp, boss);
+        encounter.combat.blocksMouse = p => encounter.paused || encounter.state !== 'playing' || encounter.selecting || blocked.some(n => n.activeInHierarchy && n.getComponent(UITransform)!.hitTest(p));
         this.refresh();
     }
     private bind(node: Node, start: () => void, end: () => void = () => {}): void {
@@ -103,22 +104,26 @@ export class CombatHUD {
         const progress = e.progression; const buildKey = Skills.map(s => progress.rank(s.id)).join();
         if (this.skillKey !== buildKey) { this.skillKey = buildKey; this.skillRanks.forEach((l, i) => { const n = progress.rank(Skills[i].id); l.string = String(n); l.node.parent!.active = n > 0; }); }
         const key = `${progress.level}:${progress.xp}`;
-        text(this.noiseText, `NOISE  ${Math.round(e.noise.pressure)}${e.noise.pressure >= 60 ? '  /  HIGH ALERT' : ''}`);
-        if (Math.round(e.noise.pressure) !== this.lastNoise) {
-            this.lastNoise = Math.round(e.noise.pressure); this.noiseFill.clear(); this.noiseFill.fillColor = new Color(230, 75, 127);
-            this.noiseFill.rect(-80, -2, 160 * e.noise.pressure / 100, 4); this.noiseFill.fill();
-        }
         const boss = e.bosses.find(boss => boss.active && !boss.dead) ?? e.boss;
-        this.bossText.node.parent!.active = e.bossSpawned && !boss.dead;
-        if (e.bossSpawned) text(this.bossText, `SIGNAL TYRANT  /  PHASE ${boss.phase}\n${Math.ceil(boss.health.current)} / ${boss.health.maximum} HP${boss.stage === 'recovery' ? '  EXPOSED!' : ''}`);
-        if (e.bossSpawned && this.lastBoss !== boss.health.current) {
-            this.lastBoss = boss.health.current; this.bossFill.clear(); this.bossFill.fillColor = new Color(255, 66, 126);
-            this.bossFill.rect(-195, -2, 390 * boss.health.current / boss.health.maximum, 4); this.bossFill.fill();
+        this.bossText.node.parent!.active = e.bossSpawned && boss.active && !boss.dead;
+        const bossFraction = Math.max(0, Math.min(1, boss.health.current / boss.health.maximum));
+        if (e.bossSpawned && this.lastBoss !== bossFraction) {
+            this.lastBoss = bossFraction;
+            const g = this.bossFill; g.clear();
+            const strip = (width:number, color:Color) => {
+                if (width <= 0) return;
+                const tip = Math.min(5,width/2);
+                g.fillColor=color;g.moveTo(-170,0);g.lineTo(-170+tip,5);
+                g.lineTo(-170+width-tip,5);g.lineTo(-170+width,0);
+                g.lineTo(-170+width-tip,-5);g.lineTo(-170+tip,-5);g.close();g.fill();
+            };
+            strip(340,new Color(27,25,39,210));
+            strip(340*bossFraction,new Color(250,78,99));
         }
         if (key !== this.xpKey) {
             this.xpKey = key; text(this.xpText, `LEVEL ${progress.level}    EXP ${progress.xp} / ${requiredXP(progress.level)}`);
-            this.xpFill.clear(); this.xpFill.fillColor = new Color(41, 36, 61); this.xpFill.rect(-160, -4, 320, 8); this.xpFill.fill();
-            this.xpFill.fillColor = new Color(85, 217, 239); this.xpFill.rect(-160, -4, 320 * progress.xp / requiredXP(progress.level), 8); this.xpFill.fill();
+            this.xpFill.clear(); this.xpFill.fillColor = new Color(41, 36, 61); this.xpFill.rect(-130, -4, 260, 8); this.xpFill.fill();
+            this.xpFill.fillColor = new Color(85, 217, 239); this.xpFill.rect(-130, -4, 260 * progress.xp / requiredXP(progress.level), 8); this.xpFill.fill();
         }
         if (hp.current !== this.lastHP || this.healthText.string.indexOf(`LV ${progress.level} `) < 0) {
             this.lastHP = hp.current; text(this.healthText, `RIN  /  LV ${progress.level}   ${Math.ceil(hp.current)}`);
@@ -130,9 +135,9 @@ export class CombatHUD {
         this.knife.color = e.combat.knifeCooldown > 1e-6 ? new Color(130,125,148) : new Color(255,171,214);
         text(this.dodge, e.combat.dodgeCooldown > 0 ? `${e.combat.dodgeCooldown.toFixed(1)}s` : 'SPACE');
         this.pistol.color = e.combat.firing ? new Color(213, 106, 145) : new Color(232, 226, 226);
-        text(this.pause, ''); if (e.paused !== this.lastPaused) { this.lastPaused = e.paused; this.pauseIcon.destroy(); this.pauseIcon = icon(this.pause.node.parent!, e.paused ? 'play' : 'pause', 30); } this.pausedHint.active = e.paused;
-        this.result.active = e.state === 'defeat'; text(this.resultTitle, `RIN HAS FALLEN\nLevel ${e.progression.level} / ${e.kills} kills`);
+        text(this.pause, ''); if (e.paused !== this.lastPaused) { this.lastPaused = e.paused; this.pauseIcon.destroy(); this.pauseIcon = icon(this.pause.node.parent!, e.paused ? 'play' : 'pause', 30); } this.pausedHint.active = false;
+        this.result.active = false; text(this.resultTitle, `RIN HAS FALLEN\nLevel ${e.progression.level} / ${e.kills} kills`);
         if (!e.paused && !e.selecting && e.state === 'playing') this.guideTime -= dt;
-        this.guide.active = this.guideTime > 0 && e.state === 'playing' && !e.paused && !e.selecting;
+        this.guide.active = false && this.guideTime > 0 && e.state === 'playing' && !e.paused && !e.selecting;
     }
 }

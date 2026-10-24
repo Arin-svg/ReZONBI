@@ -29,6 +29,7 @@ import { NoiseSystem } from '../systems/NoiseSystem';
 import { SignalTyrant } from '../enemies/SignalTyrant';
 import { ZombieBase } from '../enemies/ZombieBase';
 import { DamageNumbers } from '../ui/DamageNumbers';
+import { GameUI } from '../ui/GameUI';
 
 const { ccclass } = _decorator;
 
@@ -68,6 +69,7 @@ export class CombatEncounter extends Component {
     private createBoss!: () => SignalTyrant;
 
     numbers!: DamageNumbers;
+    ui!: GameUI;
 
     private hitId = 0;
 
@@ -339,6 +341,7 @@ export class CombatEncounter extends Component {
                             enemy.position,
                             S.bossXP
                         );
+                    this.ui?.stageClear(S.bossXP);
                     },
                 },
                 geometry
@@ -450,6 +453,7 @@ export class CombatEncounter extends Component {
             geometry,
             this
         );
+        this.ui = new GameUI(this);
 
         console.log(
             'CombatEncounter initialized successfully.'
@@ -484,6 +488,8 @@ export class CombatEncounter extends Component {
     }
 
     togglePause(): void {
+
+        if (this.ui?.routePause()) return;
 
         if (
             this.state !== 'playing' ||
@@ -649,6 +655,12 @@ export class CombatEncounter extends Component {
         }
 
         this.hud.refresh(dt);
+        this.ui?.tick(dt);
+    }
+
+    restoreBossCheckpoint(states:{x:number;z:number;hp:number;strength:number}[]):void {
+        for(const state of states){const boss=this.bosses.find(b=>!b.active)??this.createBoss();boss.resetBoss(state,state.strength);boss.health.current=state.hp;this.boss=boss;}
+        this.bossSpawned=this.bossCount>0;
     }
 
     spawnBoss(): void {

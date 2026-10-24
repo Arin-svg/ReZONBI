@@ -52,6 +52,12 @@ export class ZombieSpawner {
         this.cooldown = S.spawnIntervals[phase] * (pressure >= 60 ? .65 : 1);
         this.spawn(elapsed);
     }
+    restoreCheckpoint(states: {kind:ZombieKind;x:number;z:number;hp:number;max:number}[], elapsed:number):void {
+        // Rebuild only when loading a checkpoint; ordinary spawns keep their pool.
+        this.enemies.forEach(e=>e.node.destroy());this.enemies.length=0;
+        this.cooldown=S.spawnIntervals[Math.min(4,Math.floor(elapsed/S.phaseSeconds))];
+        for(const state of states){const enemy=this.create(state.kind,state,state.max/C[state.kind].hp,1+Math.min(4,Math.floor(elapsed/S.phaseSeconds))*.15);if(enemy)enemy.health.current=state.hp;}
+    }
     reset(): void {
         this.enemies.forEach(e => e.node.active = false); this.cooldown = S.spawnIntervals[0];
         const initial: [ZombieKind, number, number][] = [['walker', -6, 2], ['walker', 0, -7], ['walker', 6, -2], ['runner', -3, 7], ['walker', 4, -7]];

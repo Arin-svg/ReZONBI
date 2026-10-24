@@ -2,6 +2,7 @@
 import {
     Color,
     EffectAsset,
+    isValid,
     Material,
     Mesh,
     MeshRenderer,
@@ -55,6 +56,7 @@ export class WorldSpriteVisual implements CharacterVisual {
     state = 'idle';
 
     private readonly renderer: MeshRenderer;
+    private destroyed = false;
 
     private readonly forward = new Vec3();
 
@@ -549,11 +551,13 @@ export class WorldSpriteVisual implements CharacterVisual {
     }
 
     destroy(): void {
-
-        this.renderer.mesh = null;
-
+        if (this.destroyed) return;
+        this.destroyed = true;
+        // Parent teardown may already have destroyed the child MeshRenderer.
+        // Its mesh setter touches engine arrays cleared during destruction.
+        // Destroy the owned node instead; never mutate a renderer during teardown.
+        if (isValid(this.root, true)) this.root.destroy();
         this.mesh.destroy();
         this.material.destroy();
-        this.root.destroy();
     }
 }
