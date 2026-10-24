@@ -16,7 +16,7 @@ export function applyConvenienceStoreTextures(root: Node, g: GeometryFactory): v
 
 /** Shared solid shell; each shop supplies its own four-panel artwork and neon. */
 export function applyShopTextures(root: Node, g: GeometryFactory, atlas: string, neonColor: string): void {
-    resources.load(`environment/${atlas}-atlas/texture`, Texture2D, (error, texture) => {
+    g.loadTexture(`environment/${atlas}-atlas/texture`, (error, texture) => {
         if (!isValid(root)) return;
         if (error || !texture) {
             console.error(`${root.name} texture could not load; keeping fallback geometry.`, error);

@@ -122,6 +122,12 @@ export class CombatEffects {
             }
         }
     }
+    rebase(x:number,z:number):void {
+        const shift=(n:Node)=>{const p=n.position;n.setPosition(p.x-x,p.y,p.z-z);};
+        for(const e of this.pool)shift(e.node);
+        for(const b of this.bullets){shift(b.node);b.from.x-=x;b.from.z-=z;b.to.x-=x;b.to.z-=z;}
+        for(const s of this.knifeSegments){shift(s.node);s.origin.x-=x;s.origin.z-=z;}
+    }
     reset(): void {
         this.pool.forEach(e => { e.life = 0; e.node.active = false; });
         this.bullets.forEach(bullet => { bullet.traveled = 0; bullet.node.active = false; });

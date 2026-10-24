@@ -31,6 +31,9 @@ import { SignalTyrant } from '../enemies/SignalTyrant';
 import { ZombieBase } from '../enemies/ZombieBase';
 import { DamageNumbers } from '../ui/DamageNumbers';
 import { GameUI } from '../ui/GameUI';
+import { EndlessCity } from '../levels/EndlessCity';
+import { CITY, originShift } from '../levels/CityChunkMath';
+import { IsometricCamera } from '../camera/IsometricCamera';
 
 const { ccclass } = _decorator;
 
@@ -71,6 +74,29 @@ export class CombatEncounter extends Component {
 
     numbers!: DamageNumbers;
     ui!: GameUI;
+    world:EndlessCity|null=null;
+    private worldCamera:Camera|null=null;
+    private bossPlacement:ArenaNavigation|null=null;
+    restoreWorld(state:ReturnType<EndlessCity['capture']>|undefined):void {
+        this.world?.restore(state,this.player.node.position);
+        this.worldCamera?.node.getComponent(IsometricCamera)?.resetFocus();
+    }
+
+    private updateWorld():void {
+        if(!this.world)return;
+        const shift=originShift(this.player.node.position);
+        if(shift.x||shift.z){
+            const p=this.player.node.position;this.player.node.setPosition(p.x-shift.x,p.y,p.z-shift.z);
+            for(const enemy of this.spawner.enemies)enemy.rebase(shift.x,shift.z);
+            for(const boss of this.bosses)boss.rebase(shift.x,shift.z);
+            this.effects.rebase(shift.x,shift.z);this.pickups.rebase(shift.x,shift.z);this.skills.rebase(shift.x,shift.z);this.numbers.rebase(shift.x,shift.z);
+            this.worldCamera?.node.getComponent(IsometricCamera)?.rebase(shift.x,shift.z);
+            this.world.rebase(shift,this.player.node.position);
+        }else this.world.sync(this.player.node.position);
+        // Projection queries this frame must see the rebased camera, not last frame's matrices.
+        this.worldCamera?.camera?.update();
+        for(const enemy of this.spawner.enemies)if(enemy.active&&Math.hypot(enemy.position.x-this.player.node.position.x,enemy.position.z-this.player.node.position.z)>CITY.retireDistance&&(!this.worldCamera||!this.world.visible(enemy.position,this.worldCamera)))enemy.node.active=false;
+    }
 
     private hitId = 0;
 
@@ -191,6 +217,7 @@ export class CombatEncounter extends Component {
         // Ensure required UI exists before creating
         // damage numbers and skill selection.
         const safeArea = this.ensureSafeArea();
+        this.worldCamera=camera;
 
         this.numbers = new DamageNumbers(
             safeArea,
@@ -302,6 +329,9 @@ export class CombatEncounter extends Component {
         // Boss
         // -------------------------------------
 
+        this.spawner.endless=!!this.world;
+        if(this.world)this.spawner.visible=p=>this.world!.visible(p,camera);
+        this.bossPlacement=new ArenaNavigation(obstacles,1.2);
         this.createBoss = () => {
             const bossNode =
                 new Node('Signal Tyrant');
@@ -528,6 +558,7 @@ export class CombatEncounter extends Component {
     restart(): void {
 
         if (!this.spawner) return;
+        this.world?.reset();
 
         this.selecting = false;
 
@@ -551,6 +582,7 @@ export class CombatEncounter extends Component {
         this.paused = false;
 
         this.player.reset();
+        this.worldCamera?.node.getComponent(IsometricCamera)?.resetFocus();
         this.health.state.reset();
         this.combat.reset();
 
@@ -569,6 +601,7 @@ export class CombatEncounter extends Component {
     lateUpdate(frameDt: number): void {
 
         if (!this.spawner) return;
+        this.updateWorld();
 
         const dt = Math.min(frameDt, 0.1);
 
@@ -680,7 +713,9 @@ export class CombatEncounter extends Component {
         const obstacles =
             this.player.obstacles;
 
-        const positions = [
+        const positions = this.world ? [12,18,24].reduce((points,r)=>{
+            for(let i=0;i<16;i++){const a=i*Math.PI/8;points.push({x:player.x+Math.cos(a)*r,z:player.z+Math.sin(a)*r});}return points;
+        },[] as {x:number;z:number}[]) : [
             { x: 0, z: -12 },
             { x: 0, z: 10 },
             { x: -12, z: 0 },
@@ -695,10 +730,10 @@ export class CombatEncounter extends Component {
             !obstacles.some(
                 obstacle => overlaps(
                     p,
-                    1.2,
+                    this.world?2.3:1.2,
                     obstacle
                 )
-            )
+            ) && (!this.world||!!this.bossPlacement?.path(p,player).length)
         );
 
         if (!position) return;

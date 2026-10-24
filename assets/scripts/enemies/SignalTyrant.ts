@@ -34,6 +34,11 @@ export class SignalTyrant extends ZombieBase {
     private bossSprite: WorldSpriteVisual | null = null;
     private visualSpeed = 0;
     summon: () => void = () => {};
+    rebase(x:number,z:number):void {
+        super.rebase(x,z);this.attackOrigin={x:this.attackOrigin.x-x,z:this.attackOrigin.z-z};
+        this.route=[];this.repathTime=0;this.nav.invalidate();
+        for(const n of [this.warning,this.lane]){const p=n.position;n.setPosition(p.x-x,p.y,p.z-z);}
+    }
     initializeBoss(p: PointXZ, context: ZombieContext, g: GeometryFactory): void {
         this.bossContext = context; this.nav = new ArenaNavigation(context.obstacles, .95);
         this.geometry = g;

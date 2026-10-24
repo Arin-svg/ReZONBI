@@ -8,10 +8,12 @@ export class IsometricCamera extends Component {
     private readonly focus = new Vec3();
     private readonly desired = new Vec3();
     private initialized = false;
+    rebase(x:number,z:number):void {this.focus.x-=x;this.focus.z-=z;this.desired.x-=x;this.desired.z-=z;const p=this.node.worldPosition;this.node.setWorldPosition(p.x-x,p.y,p.z-z);}
+    resetFocus():void {this.initialized=false;this.lateUpdate(0);}
     lateUpdate(frameDt: number): void {
         if (!this.target) return;
         const p = this.target.worldPosition;
-        this.desired.set(Math.max(-16, Math.min(16, p.x)), 0.7, Math.max(-16, Math.min(16, p.z)));
+        this.desired.set(p.x, 0.7, p.z);
         if (!this.initialized) { this.focus.set(this.desired); this.initialized = true; }
         else Vec3.lerp(this.focus, this.focus, this.desired, 1 - Math.exp(-C.cameraDamping * Math.min(frameDt, 0.1)));
         this.node.setWorldPosition(this.focus.x + C.cameraOffset, this.focus.y + C.cameraHeight, this.focus.z + C.cameraOffset);

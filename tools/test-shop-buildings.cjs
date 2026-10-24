@@ -14,6 +14,7 @@ const cache=new Map();
 function load(file,override){file=path.resolve(file);if(!override&&cache.has(file))return cache.get(file);const box={exports:{},require:id=>id==='cc'?cc:load(path.resolve(path.dirname(file),id+'.ts'))};if(!override)cache.set(file,box.exports);vm.runInNewContext(ts.transpileModule(override||fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2019}}).outputText,box);return box.exports;}
 const g={part(parent,name,color,x,y,z,sx,sy,sz){const n=new Node(name);parent.addChild(n);n.setPosition(x,y,z);n.setScale(sx,sy,sz);return n;},form(...args){return this.part(...args);},glow(){},material(){return {};},texturedMaterial(texture,emission,tint){return {texture,emission,tint};},ownMesh(mesh){return mesh;}};
 const arena=new Node('Arena');
+g.loadTexture=(path,callback)=>cc.resources.load(path,cc.Texture2D,callback);
 const obstacles=load('assets/scripts/levels/ResidentialArena.ts').buildResidential(arena,g);
 const baseline=require('node:child_process').execFileSync('git',['show','HEAD:assets/scripts/levels/ResidentialArena.ts'],{encoding:'utf8'});
 const original=load('assets/scripts/levels/ResidentialArena.ts',baseline).buildResidential(new Node('Baseline'),g);

@@ -215,9 +215,10 @@ export class GameUI {
     }
     private drawMap():void {
         const g=this.map;g.clear();g.fillColor=new Color(7,12,25,220);g.circle(0,0,59);g.fill();g.strokeColor=new Color(255,35,112);g.lineWidth=2;g.stroke();
-        const point=(x:number,z:number)=>({x:(x-z)*1.05,y:-(x+z)*.65});
+        const center=this.e.player.node.position;
+        const point=(x:number,z:number)=>({x:((x-center.x)-(z-center.z))*1.05,y:-((x-center.x)+(z-center.z))*.65});
         g.fillColor=new Color(44,56,78);for(const o of this.e.player.obstacles){const p=point(o.x,o.z);if(Math.hypot(p.x,p.y)<48){g.rect(p.x-2,p.y-2,4,4);g.fill();}}
-        g.fillColor=new Color(255,40,100);for(const enemy of this.e.targets())if(enemy.active&&!enemy.dead){const p=point(enemy.position.x,enemy.position.z);g.circle(p.x,p.y,2.2);g.fill();}
+        g.fillColor=new Color(255,40,100);for(const enemy of this.e.targets())if(enemy.active&&!enemy.dead){const p=point(enemy.position.x,enemy.position.z);if(Math.hypot(p.x,p.y)<54){g.circle(p.x,p.y,2.2);g.fill();}}
         const p=point(this.e.player.node.position.x,this.e.player.node.position.z);g.fillColor=new Color(255,238,250);g.moveTo(p.x,p.y+5);g.lineTo(p.x-4,p.y-4);g.lineTo(p.x+4,p.y-4);g.close();g.fill();
     }
 }

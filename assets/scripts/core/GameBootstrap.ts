@@ -6,6 +6,7 @@ import {
     Component,
     EffectAsset,
     instantiate,
+    isValid,
     Layers,
     Node,
     Prefab,
@@ -18,7 +19,7 @@ import {
 import { WorldSpriteVisual } from '../player/WorldSpriteVisual';
 import { IsometricCamera } from '../camera/IsometricCamera';
 import { GeometryFactory } from '../levels/GeometryFactory';
-import { buildResidential } from '../levels/ResidentialArena';
+import { EndlessCity } from '../levels/EndlessCity';
 import { PlayerController } from '../player/PlayerController';
 import { RinVisual } from '../player/RinVisual';
 import { RiggedCharacterVisual } from '../player/CharacterVisual';
@@ -70,7 +71,7 @@ export class GameBootstrap extends Component {
     private spriteVisual: WorldSpriteVisual | null = null;
     private geometry: GeometryFactory | null = null;
 
-    onLoad(): void {
+    async onLoad(): Promise<void> {
 
         // Prevent duplicate initialization.
         if (this.node.name !== 'GameManager') {
@@ -137,10 +138,9 @@ export class GameBootstrap extends Component {
         const arena = new Node('Residential Arena');
         this.node.addChild(arena);
 
-        const obstacles = buildResidential(
-            arena,
-            this.geometry
-        );
+        const city=await EndlessCity.create(arena,this.geometry);
+        if(!city||!isValid(this.node))return;
+        const obstacles=city.obstacles;
 
         // ------------------------------------
         // 3. Create Rin
@@ -297,6 +297,7 @@ export class GameBootstrap extends Component {
         const encounter =
             encounterNode.addComponent(CombatEncounter);
 
+        encounter.world=city;
         encounter.initialize(
             player,
             this.geometry,

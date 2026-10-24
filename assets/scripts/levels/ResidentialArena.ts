@@ -8,7 +8,7 @@ import { buildStreetProps } from './StreetProps';
 import { buildNightAtmosphere } from './NightAtmosphere';
 
 /** Deliberately small crossed streets with loops around cars and barricades. */
-export function buildResidential(parent: Node, g: GeometryFactory): Obstacle[] {
+export function buildResidential(parent: Node, g: GeometryFactory, endless=false): Obstacle[] {
     const obstacles: Obstacle[] = [];
     let visualParent = parent;
     const part = (name: string, c: string, x: number, y: number, z: number, sx: number, sy: number, sz: number) =>
@@ -17,7 +17,7 @@ export function buildResidential(parent: Node, g: GeometryFactory): Obstacle[] {
         obstacles.push({ x, z, halfX: sx / 2, halfZ: sz / 2 });
         return part(name, c, x, y, z, sx, sy, sz);
     };
-    part('City foundation', P.navy, 0, -0.23, 0, 70, 0.4, 70);
+    part('City foundation', P.navy, 0, -0.23, 0, endless?36:70, 0.4, endless?36:70);
     buildImportedRoad(parent, g);
     for (const sideX of [-1, 1]) for (const sideZ of [-1, 1]) {
         const x = sideX * 11, z = sideZ * 11;
@@ -45,7 +45,7 @@ export function buildResidential(parent: Node, g: GeometryFactory): Obstacle[] {
         g.form(parent, 'Road cone', '#C47A57', x + .85, 1.2, z, .27, .4, .27, 'cone');
     }
     // Visible limits match the movement solver's 36m playable square.
-    for (const side of [-1, 1]) {
+    for (const side of endless?[]:[-1, 1]) {
         part('Boundary rail', P.roof, side * 18.15, 0.4, 0, 0.3, 0.8, 36.6);
         part('Boundary rail', P.roof, 0, 0.4, side * 18.15, 36.6, 0.8, 0.3);
     }

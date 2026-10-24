@@ -24,5 +24,6 @@ export class DamageNumbers {
             this.camera.convertToUINode(n.world, this.parent, this.projected); n.node.setPosition(this.projected);
         }
     }
+    rebase(x:number,z:number):void {for(const n of this.pool){n.world.x-=x;n.world.z-=z;}}
     reset(): void { this.pool.forEach(n => { n.life = 0; n.node.active = false; }); }
 }

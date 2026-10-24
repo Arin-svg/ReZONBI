@@ -10,6 +10,8 @@ import { ZombieBase, ZombieContext, ZombieKind } from './ZombieBase';
 export class ZombieSpawner {
     readonly enemies: ZombieBase[] = [];
     private candidates: PointXZ[] = [];
+    endless = false;
+    visible:((p:PointXZ)=>boolean)|null=null;
     private cooldown = S.baseSpawnInterval;
     wave = 1;
     waveSpawned = 0;
@@ -52,11 +54,18 @@ export class ZombieSpawner {
     }
     spawn(elapsed: number, random: () => number = Math.random): ZombieBase | null {
         if (this.alive >= S.maxEnemies) return null;
+        if(this.endless){
+            const player=this.context.player.position;this.candidates.length=0;
+            for(const radius of [18,24,30])for(let i=0;i<32;i++){
+                const angle=i*Math.PI/16,p={x:player.x+Math.cos(angle)*radius,z:player.z+Math.sin(angle)*radius};
+                if(!this.context.obstacles.some(o=>overlaps(p,C.enemyRadius+.15,o))&&!this.visible?.(p))this.candidates.push(p);
+            }
+        }
         const phase = Math.min(4, Math.floor(elapsed / S.phaseSeconds));
         const start = Math.floor(random() * this.candidates.length);
         for (let i = 0; i < this.candidates.length; i++) {
             const p = this.candidates[(start + i) % this.candidates.length], d = distance(p, this.context.player.position);
-            if (d < S.minSpawnDistance || d > S.maxSpawnDistance || this.enemies.some(e => e.active && !e.dead && distance(e.position, p) < 1.2)) continue;
+            if (d < S.minSpawnDistance || d > (this.endless?30.01:S.maxSpawnDistance) || this.enemies.some(e => e.active && !e.dead && distance(e.position, p) < 1.2)) continue;
             if (!this.context.navigation.path(p, this.context.player.position).length) continue;
             return this.create(
                 random() < S.runnerChances[phase] ? 'runner' : 'walker',

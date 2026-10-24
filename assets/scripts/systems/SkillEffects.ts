@@ -47,5 +47,6 @@ export class SkillEffects {
             if (!this.shadow.fired && this.shadow.remaining <= 0) { this.shadow.fired = true; this.area(this.shadow.p, 1.8, 20 + e.progression.rank('shadow') * 8); this.shadow = null; }
         }
     }
+    rebase(x:number,z:number):void {if(this.shadow){this.shadow.p.x-=x;this.shadow.p.z-=z;}for(const n of this.blades){const p=n.position;n.setPosition(p.x-x,p.y,p.z-z);}}
     reset(): void { this.time = this.pulse = 0; this.hitTimes.clear(); this.shadow = null; this.blades.forEach(n => n.active = false); }
 }

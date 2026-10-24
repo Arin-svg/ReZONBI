@@ -19,7 +19,7 @@ export function buildImportedRoad(parent: Node, g: GeometryFactory): void {
         if(i===1||i===3)pavement.push(renderer);
         if(batch.surface==='crosswalk')crossings.push(renderer);
     });
-    const load=(name:string,targets:MeshRenderer[],roughness:number)=>resources.load(`environment/${name}/texture`,Texture2D,(error,texture)=>{
+    const load=(name:string,targets:MeshRenderer[],roughness:number)=>g.loadTexture(`environment/${name}/texture`, (error,texture)=>{
         if(!isValid(root))return;
         if(error||!texture){console.error(`Ground texture ${name} unavailable; retaining original material.`,error);return;}
         for(const renderer of targets)renderer.setSharedMaterial(g.texturedMaterial(texture,0,'#FFFFFF',roughness),0);

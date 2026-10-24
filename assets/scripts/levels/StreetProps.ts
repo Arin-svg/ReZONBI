@@ -99,7 +99,7 @@ export function buildStreetProps(parent: Node, g: GeometryFactory): void {
         g.form(root,'Manhole rim','#837078',x,.084,z,.62,.025,.62,'ring');
         for(let i=-2;i<=2;i++)g.part(root,'Manhole ribs','#302B39',x+i*.09,.085,z,.025,.012,.38);
     }
-    resources.load('environment/worn-car-paint-atlas/texture',Texture2D,(error,texture)=>{
+    g.loadTexture('environment/worn-car-paint-atlas/texture', (error,texture)=>{
         if(!isValid(root))return;
         if(error||!texture){console.error('Street textures unavailable; retaining fallback materials.',error);return;}
         for(const surface of surfaces)surface.renderer.setSharedMaterial(g.texturedMaterial(texture,surface.emission,surface.tint),0);

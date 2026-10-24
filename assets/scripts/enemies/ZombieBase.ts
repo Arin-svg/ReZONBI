@@ -39,6 +39,12 @@ export class ZombieBase extends Component implements Damageable {
     get position(): PointXZ { return this.node.position; }
     get dead(): boolean { return this.health.dead; }
     get active(): boolean { return this.node.activeInHierarchy && this.enabled; }
+    rebase(x:number,z:number):void {
+        const p=this.node.position;this.node.setPosition(p.x-x,p.y,p.z-z);
+        if(this.spawn){this.spawn={x:this.spawn.x-x,z:this.spawn.z-z};}
+        this.destination={x:this.destination.x-x,z:this.destination.z-z};this.path=[];this.repath=0;
+        this.context.navigation.invalidate();
+    }
     initialize(kind: ZombieKind, spawn: PointXZ, context: ZombieContext, geometry: GeometryFactory): void {
         this.kind = kind; this.stats = C[kind]; this.context = context; this.spawn = spawn;
         this.health = new HealthState(this.stats.hp); this.visual = new ZombieVisual(this.node, geometry, kind === 'runner'); this.reset();

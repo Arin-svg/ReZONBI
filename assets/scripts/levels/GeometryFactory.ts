@@ -1,7 +1,16 @@
-import { Color, EffectAsset, Material, Mesh, MeshRenderer, Node, primitives, Texture2D, utils, Vec3 } from 'cc';
+import { Color, EffectAsset, Material, Mesh, MeshRenderer, Node, primitives, resources, Texture2D, utils, Vec3 } from 'cc';
 
 /** One shared unit mesh per shape and one material per colour; no external assets. */
 export class GeometryFactory {
+    private pendingTextures=0;
+    private textureWaiters:(()=>void)[]=[];
+    loadTexture(path:string,done:(error:Error|null,texture:Texture2D)=>void):void {
+        this.pendingTextures++;
+        resources.load(path,Texture2D,(error,texture)=>{try{done(error,texture);}finally{
+            if(--this.pendingTextures===0)this.textureWaiters.splice(0).forEach(resolve=>resolve());
+        }});
+    }
+    texturesReady():Promise<void> {return this.pendingTextures?new Promise(resolve=>this.textureWaiters.push(resolve)):Promise.resolve();}
     spriteAssets: {camera:Node; effect:EffectAsset; infected:Texture2D; boss?:Texture2D; bossWalk?:Texture2D} | null = null;
     private readonly boxMesh = utils.createMesh(primitives.box());
     private readonly sphereMesh = utils.createMesh(primitives.sphere(0.5, { segments: 10 }));
@@ -45,7 +54,7 @@ export class GeometryFactory {
         if (!material) {
             material = new Material();
             material.initialize({ effectAsset: this.surfaceEffect, defines: {
-                USE_ALBEDO_MAP: true, USE_EMISSIVE_MAP: emission > 0,
+                USE_ALBEDO_MAP: true, USE_EMISSIVE_MAP: emission > 0, USE_INSTANCING: true,
             }});
             material.setProperty('albedo', new Color().fromHEX(tint));
             material.setProperty('albedoMap', texture);

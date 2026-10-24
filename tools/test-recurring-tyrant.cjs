@@ -49,6 +49,12 @@ const captured=checkpoints.captureRun(e);assert.ok(checkpoints.parseRun(JSON.str
 checkpoints.restoreRun(e,captured);assert.equal(e.elapsed,180);assert.equal(e.kills,32);assert.equal(e.spawner.spawnedSinceBoss,49);assert.equal(e.spawner.wave,5);assert.equal(e.spawner.cooldown,1.2);assert.equal(e.spawner.alive,1);
 const legacy={...captured};delete legacy.waves;assert.ok(checkpoints.parseRun(JSON.stringify(legacy)));checkpoints.restoreRun(e,legacy);assert.equal(e.elapsed,180);assert.equal(e.spawner.wave,1);assert.equal(e.spawner.spawnedSinceBoss,0);
 for(const bad of [{...saved,wave:0},{...saved,nextBossWave:10},{...saved,spawnedSinceBoss:-1},{...saved,cooldown:99}])assert.equal(checkpoints.parseRun(JSON.stringify({...captured,waves:bad})),null);
+
+const worldState={seed:77,originX:1440,originZ:-2880};
+e.world={capture:()=>worldState,reset(){},restore(state){this.restored=state;}};
+e.player.node.setPosition(110,.06,-90);const distant=checkpoints.captureRun(e);assert.ok(checkpoints.parseRun(JSON.stringify(distant)));
+checkpoints.restoreRun(e,distant);assert.equal(e.player.node.position.x,110);assert.equal(e.player.node.position.z,-90);assert.equal(e.world.restored.originX,1440);assert.equal(e.world.restored.seed,77);
+assert.equal(checkpoints.parseRun(JSON.stringify({...distant,world:{...worldState,originX:145}})),null);
 console.log('PASS actual checkpoint round-trip, no duplicate restored spawn counts, legacy migration, invalid wave-state rejection');
 
 const {HealthState}=run('assets/scripts/systems/DamageSystem.ts',()=>({}));

@@ -1,18 +1,28 @@
 import { Obstacle, overlaps, PointXZ } from '../core/MovementMath';
 import { clearLine, distance } from './CombatMath';
 
-/** Small static A* grid, built once. At most five enemies replan twice a second. */
+/** Bounded local A* grid, shared by the infected and refreshed as the city streams. */
 export class ArenaNavigation {
-    private readonly size = 35;
+    private readonly size = 49;
     private readonly cells: PointXZ[] = [];
     private readonly open: boolean[] = [];
-    constructor(private readonly obstacles: readonly Obstacle[], private readonly radius: number) {
-        for (let z = -17; z <= 17; z++) for (let x = -17; x <= 17; x++) {
-            this.cells.push({ x, z }); this.open.push(!obstacles.some(o => overlaps({ x, z }, radius + 0.08, o)));
+    private nearby:readonly Obstacle[]=[];
+    private anchor='';
+    constructor(private readonly obstacles: readonly Obstacle[], private readonly radius: number) {}
+    invalidate():void {this.anchor='';}
+    private prepare(to:PointXZ):void {
+        const cx=Math.round(to.x/8)*8,cz=Math.round(to.z/8)*8;
+        const key=cx+':'+cz+':'+((this.obstacles as {revision?:number}).revision||0);
+        if(key===this.anchor)return;this.anchor=key;this.cells.length=this.open.length=0;
+        const local=this.obstacles.filter(o=>Math.abs(o.x-cx)<25+o.halfX&&Math.abs(o.z-cz)<25+o.halfZ);
+        this.nearby=local;
+        for (let z = cz-24; z <= cz+24; z++) for (let x = cx-24; x <= cx+24; x++) {
+            this.cells.push({ x, z }); this.open.push(!local.some(o => overlaps({ x, z }, this.radius + 0.08, o)));
         }
     }
     path(from: PointXZ, to: PointXZ): PointXZ[] {
         if (clearLine(from, to, this.obstacles, this.radius + 0.04)) return [{ x: to.x, z: to.z }];
+        this.prepare(to);
         const closest = (p: PointXZ, clearance = this.radius) => {
             let best = -1, min = Infinity;
             this.cells.forEach((c, i) => { const d = distance(p, c); if (this.open[i] && d < min && clearLine(p, c, this.obstacles, clearance)) { best = i; min = d; } });
@@ -45,7 +55,7 @@ export class ArenaNavigation {
                 if (!dx && !dz) continue;
                 const x = cx + dx, z = cz + dz, next = z * this.size + x;
                 if (x < 0 || z < 0 || x >= this.size || z >= this.size || !this.open[next] || closed.has(next) ||
-                    !clearLine(this.cells[current], this.cells[next], this.obstacles, this.radius + 0.04)) continue;
+                    !clearLine(this.cells[current], this.cells[next], this.nearby, this.radius + 0.04)) continue;
                 const c = cost.get(current)! + Math.hypot(dx, dz);
                 if (c < (cost.get(next) ?? Infinity)) { cost.set(next, c); came.set(next, current); if (todo.indexOf(next) < 0) todo.push(next); }
             }

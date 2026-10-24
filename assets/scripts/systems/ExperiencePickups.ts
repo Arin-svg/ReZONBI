@@ -34,5 +34,6 @@ export class ExperiencePickups {
             c.node.setRotationFromEuler(0, this.age * 85, 35);
         }
     }
+    rebase(x:number,z:number):void {for(const item of this.pool){const p=item.node.position;item.node.setPosition(p.x-x,p.y,p.z-z);}}
     reset(): void { this.age = 0; this.pool.forEach(c => { c.value = 0; c.node.active = false; }); }
 }
