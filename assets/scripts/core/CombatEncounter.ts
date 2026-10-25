@@ -377,7 +377,7 @@ export class CombatEncounter extends Component {
                             S.bossXP
                         );
                     if(!this.bosses.some(boss=>boss.active&&!boss.dead))this.spawner.bossDefeated();
-                    this.ui?.stageClear(S.bossXP);
+                    this.ui?.notify('Area Cleared','Tyrant defeated. Survival continues.');
                     },
                 },
                 geometry
@@ -493,6 +493,7 @@ export class CombatEncounter extends Component {
             this
         );
         this.ui = new GameUI(this);
+        this.spawner.onRush=()=>this.ui?.notify('Zombie Rush!','Incoming infected. Keep moving!');
 
         console.log(
             'CombatEncounter initialized successfully.'

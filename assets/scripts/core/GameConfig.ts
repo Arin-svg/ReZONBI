@@ -19,10 +19,12 @@ export const Palette = {
     skin: '#DFC0B8', hair: '#151723', glass: '#46677C',
 };
 
-/** Short first playable Horde run. Survival time excludes pauses and upgrade choices. */
+/** Endless survival balancing. Survival time excludes pauses and upgrade choices. */
 export const SurvivalConfig = {
     bossEveryWaves: 5, bossSpawnThreshold: 50, bossStrengthMultiplier: 1.5, maxEnemies: 24, phaseSeconds: 30,
-    baseSpawnBudget: 8, waveGrowth: 1.015, baseSpawnInterval: 4, minSpawnInterval: .4, spawnGrowthPerMinute: .05,
+    baseSpawnBudget: 8, waveGrowth: 1.25, baseSpawnInterval: 4, minSpawnInterval: .4, spawnGrowthPerMinute: .05,
+    waveFrequencyGrowth: 1.10, speedEveryWaves: 5, speedGrowth: 1.03, maxSpeedMultiplier: 1.3,
+    rushEveryWaves: 3, rushDuration: 10, rushFrequencyMultiplier: 4, rushMinInterval: .2,
     runnerChances: [.1, .25, .4, .5, .55],
     minSpawnDistance: 7, maxSpawnDistance: 15,
     walkerXP: 5, runnerXP: 8, bossXP: 100,

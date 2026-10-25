@@ -6,7 +6,7 @@ import { action, artwork, copy, entrance, heading, stretch } from './CyberWidget
 import { label, panel, pin, typography, ui } from './ExplorationHUD';
 
 type Page='home'|'game'|'pause'|'settings'|'tutorial'|'defeat'|'victory'|'confirm'|'dialogue'|'stats';
-export type Notice='Supply Found'|'Ammo Low'|'Health Low'|'Skill Ready'|'Door Locked'|'Item Obtained'|'Objective Updated'|'Area Cleared'|'Save Point';
+export type Notice='Zombie Rush!'|'Supply Found'|'Ammo Low'|'Health Low'|'Skill Ready'|'Door Locked'|'Item Obtained'|'Objective Updated'|'Area Cleared'|'Save Point';
 const SAVE='rezonbi.run.v1', SETTINGS='rezonbi.ui.settings.v1';
 const TUTORIAL=[['SURVIVE NEW HAVEN','The infected are everywhere. Keep moving and stay alert.'],['EQUIPPED WEAPONS','Your pistol has unlimited ammo. Area slash is a short-range attack that can hit multiple enemies.'],['NOISE DETECTION','Gunfire attracts more infected. Keep moving after you shoot.'],['HEALTH AND DAMAGE','Your health is shown here. Avoid taking damage to survive longer.'],['MINIMAP','The minimap shows your position, enemies, and obstacles in the area.']];
 
@@ -155,7 +155,7 @@ export class GameUI {
     }
     dialogue(lines:string[]):void {if(!lines.length)return;this.back=this.page;this.dialogueLines=lines;this.dialogueIndex=0;this.show('dialogue');}
     stageClear(reward:number):void {this.pendingClear+=reward;}
-    notify(title:Notice,detail:string):void {if(this.notices.length<4&&!this.notices.some(n=>n.title===title))this.notices.push({title,detail});}
+    notify(title:Notice,detail:string):void {if(title==='Zombie Rush!'){this.notices=this.notices.filter(n=>n.title!==title);this.notices.unshift({title,detail});this.notices.length=Math.min(4,this.notices.length);this.toastTime=0;return;}if(this.notices.length<4&&!this.notices.some(n=>n.title===title))this.notices.push({title,detail});}
     item(kind:'Health Pack'|'Ammo'|'EXP'|'Energy Crystal',amount:number):void {copy(this.popup,`${kind.toUpperCase()}   +${amount}`);this.popupTime=2;this.popup.active=true;}
     interaction(verb:'Open'|'Collect'|'Tap'|'Hold',text:string,available:boolean,callback?:()=>void):void {
         this.prompt.active=available;copy(this.prompt,`${verb.toUpperCase()}  /  ${text}`);this.prompt.off(Node.EventType.TOUCH_END);

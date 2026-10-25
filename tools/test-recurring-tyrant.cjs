@@ -11,8 +11,8 @@ const {ZombieSpawner}=run('assets/scripts/enemies/ZombieSpawner.ts',id=>id==='cc
 const makeSpawner=()=>new ZombieSpawner(new Node(),{},{player:new Node(),obstacles:[],navigation:{path:(a,b)=>[a,b]}});
 const clear=s=>s.enemies.forEach(e=>{e.node.active=false;e.dead=true;});
 const sp=makeSpawner();assert.equal(sp.wave,1);assert.equal(sp.spawnedSinceBoss,5);assert.equal(sp.waveSpawnBudget,8);
-for(const wave of [1,2,5,10,100,500]){sp.wave=wave;assert.equal(sp.waveSpawnBudget,Math.ceil(8*1.015**(wave-1)));assert.equal(sp.exactSpawnBudget,8*1.015**(wave-1));}
-for(const mins of [0,5,10,20,30,1000])assert.equal(sp.spawnInterval(mins*60),Math.max(.4,4/(1+.05*mins)));
+for(const wave of [1,2,5,10,100,500]){sp.wave=wave;assert.equal(sp.waveSpawnBudget,Math.ceil(Math.min(Number.MAX_SAFE_INTEGER,8*1.25**(wave-1))));assert.equal(sp.exactSpawnBudget,Math.min(Number.MAX_SAFE_INTEGER,8*1.25**(wave-1)));}
+sp.wave=1;for(const mins of [0,5,10,20,30,1000])assert.equal(sp.spawnInterval(mins*60),Math.max(.4,4/(1+.05*mins)));
 assert.ok(sp.spawnInterval(61)<sp.spawnInterval(60));assert.equal(sp.spawnInterval(1e9,100),.4);
 sp.reset();let spawned=sp.spawnedSinceBoss;for(let t=0;t<100;t+=.1){clear(sp);sp.tick(.1,t);assert.ok(sp.wave>=1&&sp.wave<=5);}
 assert.ok(sp.wave>1);assert.ok(sp.spawnedSinceBoss>spawned);
@@ -37,7 +37,7 @@ e.boss.dead=true;e.spawner.bossDefeated();assert.equal(e.spawner.wave,6);e.lateU
 e.boss.active=false;e.spawner.wave=10;e.spawner.waveSpawned=0;e.spawner.spawnedSinceBoss=49;e.spawner.cooldown=4;e.lateUpdate(.1);assert.equal(e.bossCount,1);e.spawner.spawnedSinceBoss=50;e.lateUpdate(.1);assert.equal(e.bossCount,2);assert.equal(e.boss.strength,1.5);assert.equal(e.bosses.length,1,'inactive boss pooled');
 e.restart();assert.equal(e.elapsed,0);assert.equal(e.bossCount,0);assert.equal(e.spawner.wave,1);assert.equal(e.spawner.spawnedSinceBoss,5);assert.equal(e.spawner.nextBossWave,5);assert.ok(e.bosses.every(b=>!b.active));
 // Restore living enemies without counting them again; retain pacing and pending milestone.
-const saved={wave:5,waveSpawned:14,spawnedSinceBoss:49,nextBossWave:5,cooldown:1.2};e.spawner.restoreCheckpoint([{kind:'walker',x:8,z:8,hp:20,max:100}],180);e.spawner.restoreWaves(saved,0,false);assert.equal(e.spawner.spawnedSinceBoss,49);assert.deepEqual(JSON.parse(JSON.stringify(e.spawner.captureWaves())),saved);
+const saved={wave:5,waveSpawned:14,spawnedSinceBoss:49,nextBossWave:5,cooldown:1.2};e.spawner.restoreCheckpoint([{kind:'walker',x:8,z:8,hp:20,max:100}],180);e.spawner.restoreWaves(saved,0,false);assert.equal(e.spawner.spawnedSinceBoss,49);assert.deepEqual(JSON.parse(JSON.stringify(e.spawner.captureWaves())),{...saved,nextRushWave:6,rushRemaining:0});
 e.spawner.restoreWaves(undefined,2,false);assert.equal(e.spawner.wave,11);assert.equal(e.spawner.nextBossWave,15);assert.equal(e.spawner.spawnedSinceBoss,0);
 
 const progressionModule=run('assets/scripts/systems/Progression.ts',()=>({}));
@@ -62,3 +62,21 @@ const {SignalTyrant}=run('assets/scripts/enemies/SignalTyrant.ts',id=>id==='cc'?
 const b=new SignalTyrant();let hit;b.bossContext={health:{receiveDamage(h){hit=h;}},nextHit:()=>1};b.node={uuid:'boss'};
 for(const [strength,hp,damage] of [[1,1800,50],[1.5,2700,75],[2.25,4050,112.5]]){b.resetBoss({x:0,z:0},strength);assert.equal(b.health.maximum,hp);b.hit(50);assert.equal(hit.amount,damage);b.hit(40);assert.equal(hit.amount,40*strength);}
 console.log('PASS wave budgets, continuous frequency, successful-spawn counts, cap/pooling, 49/50 gates, pending milestones, boss placement/duplicates, victory progression, pause/selection, saves, restart and unchanged boss strength/attacks');
+
+// Wave and time frequency multiply; speed increases only each fifth wave and is capped.
+sp.reset();const base=sp.spawnInterval(0);sp.wave=2;assert.ok(Math.abs(sp.spawnInterval(0)-base/1.1)<1e-10);assert.ok(sp.spawnInterval(300)<sp.spawnInterval(0));
+for(const [wave,speed] of [[1,1],[4,1],[5,1.03],[10,1.03**2],[10000,1.3]]){sp.wave=wave;assert.equal(sp.speedMultiplier,speed);}
+sp.candidates=makeSpawner().candidates;sp.reset();let rushes=0;sp.onRush=()=>rushes++;sp.wave=3;sp.waveSpawned=0;sp.tick(.1,0);assert.equal(rushes,1);assert.ok(sp.rushRemaining>0);const rushed=sp.spawnedSinceBoss;
+for(let i=0;i<50;i++){clear(sp);sp.tick(.1,i*.1);}assert.ok(sp.spawnedSinceBoss-rushed>=5);assert.equal(rushes,1);
+const rushSave=sp.captureWaves();const restored=makeSpawner();restored.restoreWaves(rushSave,0,false);assert.equal(restored.rushRemaining,sp.rushRemaining);assert.equal(restored.nextRushWave,6);
+sp.wave=15;sp.nextBossWave=15;sp.nextRushWave=15;sp.rushRemaining=0;sp.tick(.1,100);assert.equal(rushes,1);assert.equal(sp.nextRushWave,15);sp.bossStarted();sp.tick(.1,100,0,true);assert.equal(rushes,1);sp.bossDefeated();sp.tick(.1,100);assert.equal(rushes,2);assert.equal(sp.nextRushWave,18);
+// A long session retains a bounded pool and only one spawn attempt per frame.
+sp.reset();let attempts=0;const spawn=sp.spawn.bind(sp);sp.spawn=t=>{attempts++;return spawn(t);};
+for(let i=0;i<20000;i++){if(i%20===0)clear(sp);const before=attempts;sp.tick(.1,i*.1);assert.ok(attempts-before<=1);if(sp.bossReady){sp.bossStarted();sp.bossDefeated();}assert.ok(sp.enemies.length<=S.maxEnemies);}
+sp.reset();assert.equal(sp.nextRushWave,3);assert.equal(sp.rushRemaining,0);assert.equal(sp.wave,1);assert.equal(sp.speedMultiplier,1);
+assert.ok(!fs.readFileSync('assets/scripts/core/CombatEncounter.ts','utf8').includes('ui?.stageClear('),'boss defeat does not pause endless survival');
+console.log('PASS 25% budgets, 10% wave frequency plus time scaling, capped speed, rush duration/duplicates/boss deferral/save/reset, 20000-frame bounded session');
+
+const timed=makeSpawner();let notices=0;timed.onRush=()=>notices++;timed.wave=3;timed.spawn=()=>null;for(let i=0;i<110;i++)timed.tick(.1,i*.1);assert.equal(timed.rushRemaining,0);assert.equal(notices,1);
+e.world=null;e.spawner=timed;e.spawner.rushRemaining=7;e.paused=true;const frozen=JSON.stringify(e.spawner.captureWaves()),time=e.elapsed;e.lateUpdate(.1);assert.equal(JSON.stringify(e.spawner.captureWaves()),frozen);assert.equal(e.elapsed,time);e.paused=false;e.selecting=true;e.lateUpdate(.1);assert.equal(JSON.stringify(e.spawner.captureWaves()),frozen);assert.equal(e.elapsed,time);
+console.log('PASS rush expiration and pause/upgrade selection freeze both pacing and active survival time');
