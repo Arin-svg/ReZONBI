@@ -1,4 +1,3 @@
-import { SurvivalConfig as S } from '../core/GameConfig';
 import { Color, EventTouch, Graphics, Label, Node, UITransform, Widget } from 'cc';
 import type { CombatEncounter } from '../core/CombatEncounter';
 import { label, panel, pin, typography, ui } from './ExplorationHUD';
@@ -132,8 +131,7 @@ export class CombatHUD {
             this.healthFill.fillColor = new Color(213, 106, 145); this.healthFill.rect(-100, -5, 200 * hp.current / hp.maximum, 10); this.healthFill.fill();
         }
         const bossAlive=e.bosses.some(b=>b.active&&!b.dead);
-        const status=`${!bossAlive&&e.spawner.bossReady?'BOSS READY':!bossAlive&&e.spawner.wave>=e.spawner.nextBossWave?'BOSS WAIT':'NEXT BOSS'}: ${e.spawner.spawnedSinceBoss} / ${S.bossSpawnThreshold}`;
-        text(this.count, `WAVE ${e.spawner.wave} · ${Math.floor(e.elapsed / 60)}:${('0' + Math.floor(e.elapsed % 60)).slice(-2)}\nINFECTED ${e.spawner.alive}${bossAlive?' · BOSS':''}\n${status}`);
+        text(this.count, `WAVE ${e.spawner.wave} · ${Math.floor(e.elapsed / 60)}:${('0' + Math.floor(e.elapsed % 60)).slice(-2)}\nINFECTED ${e.spawner.alive}${bossAlive?' · BOSS':''}`);
         text(this.knife, e.combat.knifeCooldown > 1e-6 ? `${Math.ceil(e.combat.knifeCooldown)}s` : 'SLASH / K');
         this.knife.color = e.combat.knifeCooldown > 1e-6 ? new Color(130,125,148) : new Color(255,171,214);
         text(this.dodge, e.combat.dodgeCooldown > 0 ? `${e.combat.dodgeCooldown.toFixed(1)}s` : 'SPACE');

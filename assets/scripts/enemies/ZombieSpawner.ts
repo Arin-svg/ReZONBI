@@ -19,10 +19,11 @@ export class ZombieSpawner {
     wave = 1;
     waveSpawned = 0;
     spawnedSinceBoss = 0;
+    // Retained only for compatibility with version-1 checkpoints.
     nextBossWave = S.bossEveryWaves;
     get exactSpawnBudget():number {return Math.min(Number.MAX_SAFE_INTEGER,S.baseSpawnBudget*Math.pow(S.waveGrowth,this.wave-1));}
     get waveSpawnBudget():number {return Math.max(1,Math.ceil(this.exactSpawnBudget));}
-    get bossReady():boolean {return this.wave>=this.nextBossWave&&this.spawnedSinceBoss>=S.bossSpawnThreshold;}
+    get bossReady():boolean {return this.spawnedSinceBoss>=S.bossSpawnThreshold;}
     spawnInterval(elapsed:number,pressure=0):number {
         return Math.max(S.minSpawnInterval,S.baseSpawnInterval/Math.pow(S.waveFrequencyGrowth,this.wave-1)/(1+S.spawnGrowthPerMinute*Math.max(0,elapsed)/60)*(pressure>=60?.65:1));
     }
@@ -83,10 +84,10 @@ export class ZombieSpawner {
         return null;
     }
     tick(dt: number, elapsed: number, pressure = 0, bossAlive = false): void {
-        // Spawn-completion waves; milestones remain pending until their boss is defeated.
-        if(!bossAlive&&this.wave<this.nextBossWave&&this.waveSpawned>=this.waveSpawnBudget)this.nextWave();
+        // Waves advance by spawn budget independently of recurring bosses.
+        if(!bossAlive&&this.waveSpawned>=this.waveSpawnBudget)this.nextWave();
         // Scalar milestones avoid an unbounded queue. Bosses take priority over rushes.
-        const bossPending=bossAlive||this.wave>=this.nextBossWave;
+        const bossPending=bossAlive||this.bossReady;
         if(!bossPending&&this.rushRemaining<=0&&this.wave>=this.nextRushWave){
             this.nextRushWave+=S.rushEveryWaves;this.rushRemaining=S.rushDuration;
             this.cooldown=0;this.onRush?.();

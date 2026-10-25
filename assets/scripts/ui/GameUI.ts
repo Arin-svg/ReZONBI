@@ -82,7 +82,7 @@ export class GameUI {
     }
     private start():void {
         this.removeSave();this.e.restart();this.started=true;this.notices=[];this.pendingClear=0;this.resetTracking();this.show('game');
-        this.notify('Objective Updated','Every 5 waves: Tyrant after 50 zombie spawns.');this.save();
+        this.notify('Objective Updated','Survive the horde. Tyrant returns after every 50 zombie spawns.');this.save();
         this.dialogue(['There are still more… ','I have to keep moving no matter what.','I can\'t let them catch me.','I have to survive.']);
     }
     private resumeSaved():void {

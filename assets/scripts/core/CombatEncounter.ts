@@ -614,18 +614,12 @@ export class CombatEncounter extends Component {
 
                 this.noise.tick(dt);
 
-                if (
-                    !this.bossSpawned ||
-                    this.noise.pressure >= 60 ||
-                    !this.bosses.some(boss => boss.active && !boss.dead)
-                ) {
-                    this.spawner.tick(
-                        dt,
-                        this.elapsed,
-                        this.noise.pressure,
-                        this.bosses.some(boss=>boss.active&&!boss.dead)
-                    );
-                }
+                this.spawner.tick(
+                    dt,
+                    this.elapsed,
+                    this.noise.pressure,
+                    this.bosses.some(boss=>boss.active&&!boss.dead)
+                );
 
                 if (this.spawner.bossReady) this.spawnBoss();
 
@@ -706,7 +700,7 @@ export class CombatEncounter extends Component {
     }
 
     spawnBoss(): void {
-        if(this.paused||this.selecting||this.state!=='playing'||!this.spawner.bossReady||this.bosses.some(b=>b.active&&!b.dead))return;
+        if(this.paused||this.selecting||this.state!=='playing'||!this.spawner.bossReady)return;
 
         const player =
             this.player.node.position;

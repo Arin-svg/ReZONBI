@@ -14,10 +14,10 @@ const sp=makeSpawner();assert.equal(sp.wave,1);assert.equal(sp.spawnedSinceBoss,
 for(const wave of [1,2,5,10,100,500]){sp.wave=wave;assert.equal(sp.waveSpawnBudget,Math.ceil(Math.min(Number.MAX_SAFE_INTEGER,8*1.25**(wave-1))));assert.equal(sp.exactSpawnBudget,Math.min(Number.MAX_SAFE_INTEGER,8*1.25**(wave-1)));}
 sp.wave=1;for(const mins of [0,5,10,20,30,1000])assert.equal(sp.spawnInterval(mins*60),Math.max(.4,4/(1+.05*mins)));
 assert.ok(sp.spawnInterval(61)<sp.spawnInterval(60));assert.equal(sp.spawnInterval(1e9,100),.4);
-sp.reset();let spawned=sp.spawnedSinceBoss;for(let t=0;t<100;t+=.1){clear(sp);sp.tick(.1,t);assert.ok(sp.wave>=1&&sp.wave<=5);}
+sp.reset();let spawned=sp.spawnedSinceBoss;for(let t=0;t<100;t+=.1){clear(sp);sp.tick(.1,t);assert.ok(sp.wave>=1);}
 assert.ok(sp.wave>1);assert.ok(sp.spawnedSinceBoss>spawned);
-// Pending milestone cannot disappear even if supplied a later wave number.
-sp.wave=7;sp.nextBossWave=5;sp.spawnedSinceBoss=49;sp.waveSpawned=100;sp.cooldown=4;sp.tick(.1,200);assert.equal(sp.wave,7);assert.equal(sp.bossReady,false);
+// Wave progression no longer waits for boss milestones. The 49/50 gate still applies.
+sp.wave=7;sp.nextRushWave=99;sp.nextBossWave=5;sp.spawnedSinceBoss=49;sp.waveSpawned=100;sp.cooldown=4;sp.tick(.1,200);assert.equal(sp.wave,8);assert.equal(sp.bossReady,false);
 clear(sp);assert.ok(sp.spawn(200));assert.equal(sp.bossReady,true);sp.bossStarted();assert.equal(sp.spawnedSinceBoss,0);assert.equal(sp.nextBossWave,10);
 const during=sp.wave;sp.waveSpawned=100;sp.tick(.1,200,100,true);assert.equal(sp.wave,during);sp.bossDefeated();assert.equal(sp.wave,during+1);assert.equal(sp.waveSpawned,0);
 // Hard cap, failed placement and pool reuse never inflate counters.
@@ -28,13 +28,14 @@ const {CombatEncounter}=run('assets/scripts/core/CombatEncounter.ts',id=>id==='c
 const e=new CombatEncounter();
 const makeBoss=()=>{const b={active:false,dead:false,ticks:0,resetBoss(p,s){this.active=true;this.dead=false;this.strength=s;},hide(){this.active=false;},tick(){this.ticks++;},tickDeath(){}};e.bosses.push(b);return b;};
 e.createBoss=makeBoss;e.boss=makeBoss();e.spawner=makeSpawner();e.player={node:{position:{x:0,z:0}},obstacles:[],reset(){}};e.health={dead:false,state:{tick(){},reset(){}}};e.combat={tick(){},reset(){}};e.noise={pressure:0,tick(){},reset(){}};e.skills={tick(){},reset(){}};e.pickups={tick(){},reset(){}};e.numbers={tick(){},reset(){}};e.effects={tick(){},reset(){}};e.hud={refresh(){},clearTouches(){}};e.progression.rank=()=>0;e.progression.reset=()=>{};e.selection={refresh(){}};
-e.elapsed=10000;e.kills=50;e.spawner.wave=4;e.spawner.spawnedSinceBoss=50;e.spawner.cooldown=4;e.lateUpdate(.1);assert.equal(e.bossCount,0,'time and kills do not trigger a boss');
-e.spawner.wave=5;e.spawner.spawnedSinceBoss=49;e.lateUpdate(.1);assert.equal(e.bossCount,0);
+e.elapsed=10000;e.kills=50;e.spawner.wave=1;e.spawner.spawnedSinceBoss=49;e.spawner.cooldown=4;e.lateUpdate(.1);assert.equal(e.bossCount,0,'time and kills do not trigger a boss without 50 spawns');
+e.spawner.wave=1;e.spawner.spawnedSinceBoss=49;e.lateUpdate(.1);assert.equal(e.bossCount,0);
 e.spawner.spawnedSinceBoss=50;e.player.obstacles=[{blocked:true}];e.spawnBoss();assert.equal(e.bossCount,0);assert.equal(e.spawner.spawnedSinceBoss,50,'failed boss placement preserves threshold');
 e.player.obstacles=[];e.paused=true;const elapsed=e.elapsed;e.lateUpdate(.1);assert.equal(e.elapsed,elapsed);assert.equal(e.bossCount,0);e.paused=false;e.selecting=true;e.lateUpdate(.1);assert.equal(e.elapsed,elapsed);assert.equal(e.bossCount,0);e.selecting=false;e.lateUpdate(.1);assert.equal(e.bossCount,1);assert.equal(e.boss.strength,1);assert.equal(e.spawner.spawnedSinceBoss,0);assert.equal(e.spawner.nextBossWave,10);
-for(let i=0;i<20;i++){e.spawnBoss();e.lateUpdate(.1);}assert.equal(e.bossCount,1);assert.equal(e.spawner.wave,5);assert.equal(e.spawner.spawnedSinceBoss,0,'normal quiet spawning pauses during boss');
-e.boss.dead=true;e.spawner.bossDefeated();assert.equal(e.spawner.wave,6);e.lateUpdate(.1);assert.equal(e.bossCount,1);
-e.boss.active=false;e.spawner.wave=10;e.spawner.waveSpawned=0;e.spawner.spawnedSinceBoss=49;e.spawner.cooldown=4;e.lateUpdate(.1);assert.equal(e.bossCount,1);e.spawner.spawnedSinceBoss=50;e.lateUpdate(.1);assert.equal(e.bossCount,2);assert.equal(e.boss.strength,1.5);assert.equal(e.bosses.length,1,'inactive boss pooled');
+for(let i=0;i<20;i++){e.spawnBoss();e.lateUpdate(.1);}assert.equal(e.bossCount,1);assert.equal(e.spawner.wave,1);assert.ok(e.spawner.spawnedSinceBoss>0,'normal quiet spawning continues during boss');
+e.boss.dead=true;e.spawner.bossDefeated();assert.equal(e.spawner.wave,2);e.lateUpdate(.1);assert.equal(e.bossCount,1);
+e.boss.active=false;e.spawner.wave=2;e.spawner.waveSpawned=0;e.spawner.spawnedSinceBoss=49;e.spawner.cooldown=4;e.lateUpdate(.1);assert.equal(e.bossCount,1);e.spawner.spawnedSinceBoss=50;e.lateUpdate(.1);assert.equal(e.bossCount,2);assert.equal(e.boss.strength,1.5);assert.equal(e.bosses.length,1,'inactive boss pooled');
+const firstLiving=e.boss;e.spawner.spawnedSinceBoss=50;e.spawnBoss();assert.equal(e.bossCount,3);assert.equal(e.bosses.filter(b=>b.active&&!b.dead).length,2);assert.ok(firstLiving.active&&!firstLiving.dead);assert.equal(e.boss.strength,2.25);assert.equal(e.spawner.spawnedSinceBoss,0);e.spawnBoss();assert.equal(e.bossCount,3,'same threshold cannot spawn twice');
 e.restart();assert.equal(e.elapsed,0);assert.equal(e.bossCount,0);assert.equal(e.spawner.wave,1);assert.equal(e.spawner.spawnedSinceBoss,5);assert.equal(e.spawner.nextBossWave,5);assert.ok(e.bosses.every(b=>!b.active));
 // Restore living enemies without counting them again; retain pacing and pending milestone.
 const saved={wave:5,waveSpawned:14,spawnedSinceBoss:49,nextBossWave:5,cooldown:1.2};e.spawner.restoreCheckpoint([{kind:'walker',x:8,z:8,hp:20,max:100}],180);e.spawner.restoreWaves(saved,0,false);assert.equal(e.spawner.spawnedSinceBoss,49);assert.deepEqual(JSON.parse(JSON.stringify(e.spawner.captureWaves())),{...saved,nextRushWave:6,rushRemaining:0});
@@ -69,7 +70,7 @@ for(const [wave,speed] of [[1,1],[4,1],[5,1.03],[10,1.03**2],[10000,1.3]]){sp.wa
 sp.candidates=makeSpawner().candidates;sp.reset();let rushes=0;sp.onRush=()=>rushes++;sp.wave=3;sp.waveSpawned=0;sp.tick(.1,0);assert.equal(rushes,1);assert.ok(sp.rushRemaining>0);const rushed=sp.spawnedSinceBoss;
 for(let i=0;i<50;i++){clear(sp);sp.tick(.1,i*.1);}assert.ok(sp.spawnedSinceBoss-rushed>=5);assert.equal(rushes,1);
 const rushSave=sp.captureWaves();const restored=makeSpawner();restored.restoreWaves(rushSave,0,false);assert.equal(restored.rushRemaining,sp.rushRemaining);assert.equal(restored.nextRushWave,6);
-sp.wave=15;sp.nextBossWave=15;sp.nextRushWave=15;sp.rushRemaining=0;sp.tick(.1,100);assert.equal(rushes,1);assert.equal(sp.nextRushWave,15);sp.bossStarted();sp.tick(.1,100,0,true);assert.equal(rushes,1);sp.bossDefeated();sp.tick(.1,100);assert.equal(rushes,2);assert.equal(sp.nextRushWave,18);
+sp.wave=15;sp.nextBossWave=15;sp.nextRushWave=15;sp.rushRemaining=0;sp.spawnedSinceBoss=50;sp.tick(.1,100);assert.equal(rushes,1);assert.equal(sp.nextRushWave,15);sp.bossStarted();sp.tick(.1,100,0,true);assert.equal(rushes,1);sp.bossDefeated();sp.tick(.1,100);assert.equal(rushes,2);assert.equal(sp.nextRushWave,18);
 // A long session retains a bounded pool and only one spawn attempt per frame.
 sp.reset();let attempts=0;const spawn=sp.spawn.bind(sp);sp.spawn=t=>{attempts++;return spawn(t);};
 for(let i=0;i<20000;i++){if(i%20===0)clear(sp);const before=attempts;sp.tick(.1,i*.1);assert.ok(attempts-before<=1);if(sp.bossReady){sp.bossStarted();sp.bossDefeated();}assert.ok(sp.enemies.length<=S.maxEnemies);}
