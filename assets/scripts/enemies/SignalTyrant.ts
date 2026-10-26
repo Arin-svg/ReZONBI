@@ -65,8 +65,10 @@ export class SignalTyrant extends ZombieBase {
         }
         if (g.spriteAssets?.boss) {
             const a = g.spriteAssets;
-            this.bossSprite = new WorldSpriteVisual(this.node, a.camera, a.boss!, a.effect, 'boss', null, null, null, null, null, a.bossWalk ?? null);
+            this.bossSprite = new WorldSpriteVisual(this.node, a.camera, a.boss!, a.effect, 'boss', null, null, null, null, null, a.bossWalk ?? null, false, a.bossAnimation ?? null);
             this.body.active = false;
+            // Shared geometry/material, grounded at the collision origin. No per-tick allocation.
+            g.part(this.node, 'Tyrant ground shadow', '#171923', 0, -.035, 0, 1.8, .015, 1.25, true);
         }
         // Warnings are children of the arena root so facing changes cannot move a locked telegraph.
         this.warning = g.form(this.node.parent!, 'Tyrant slam telegraph', '#FF528A', 0, .09, 0, 6.4, 1, 6.4, 'ring'); g.glow(this.warning, '#FF528A', .7);
@@ -166,7 +168,7 @@ export class SignalTyrant extends ZombieBase {
     lateUpdate(dt: number): void {
         // Keep the billboard aligned after boss movement and camera updates.
         // Simulation tick owns animation time, so pause/upgrade selection freeze the cycle.
-        if (this.node.active && !this.dead) this.bossSprite?.animate(0, this.visualSpeed);
+        if (this.node.active) this.bossSprite?.animate(0, this.dead ? 0 : this.visualSpeed);
     }
     onDestroy(): void { this.bossSprite?.destroy(); super.onDestroy(); }
 }

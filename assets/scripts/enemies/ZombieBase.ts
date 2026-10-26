@@ -11,7 +11,7 @@ import { Damageable, DamageHit, HealthState } from '../systems/DamageSystem';
 import { ZombieVisual } from './ZombieVisual';
 const { ccclass } = _decorator;
 export type ZombieState = 'Idle' | 'Investigate' | 'Chase' | 'Attack' | 'Stunned' | 'Dead';
-export type ZombieKind = 'walker' | 'runner';
+export type ZombieKind = 'walker' | 'runner' | 'brute';
 export interface ZombieContext {
     player: Node; health: PlayerHealth; obstacles: readonly Obstacle[];
     navigation: ArenaNavigation; effects: CombatEffects; peers: () => readonly ZombieBase[]; nextHit: () => number;
@@ -47,7 +47,7 @@ export class ZombieBase extends Component implements Damageable {
     }
     initialize(kind: ZombieKind, spawn: PointXZ, context: ZombieContext, geometry: GeometryFactory): void {
         this.kind = kind; this.stats = C[kind]; this.context = context; this.spawn = spawn;
-        this.health = new HealthState(this.stats.hp); this.visual = new ZombieVisual(this.node, geometry, kind === 'runner'); this.reset();
+        this.health = new HealthState(this.stats.hp); this.visual = new ZombieVisual(this.node, geometry, kind); this.reset();
     }
     reset(spawn?: PointXZ, healthMultiplier = 1, damageMultiplier = 1): void {
         if (spawn) this.spawn = { x: spawn.x, z: spawn.z };

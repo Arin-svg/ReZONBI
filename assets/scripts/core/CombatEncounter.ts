@@ -292,10 +292,11 @@ export class CombatEncounter extends Component {
                     AudioManager.instance?.playSfx('zombie_death');
 
                     this.kills++;
+                    this.spawner.regularKilled();
 
                     this.pickups.drop(
                         enemy.position,
-                        enemy.kind === 'runner'
+                        enemy.kind === 'brute' ? S.bruteXP : enemy.kind === 'runner'
                             ? S.runnerXP
                             : S.walkerXP
                     );
@@ -478,7 +479,8 @@ export class CombatEncounter extends Component {
 
         this.hud = new CombatHUD(
             root,
-            this
+            this,
+            camera
         );
 
         this.selection = new SkillSelectionUI(

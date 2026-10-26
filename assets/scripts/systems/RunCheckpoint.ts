@@ -21,14 +21,15 @@ export function parseRun(raw:string|null):RunCheckpoint|null {
         if(!Number.isInteger(s.level)||!finite(s.level,1,1e6)||!finite(s.xp)||!Number.isInteger(s.pending)||!finite(s.pending)||!s.levels||!finite(s.noise,0,100))return null;
         if(!Skills.every(k=>s.levels[k.id]===undefined||(Number.isInteger(s.levels[k.id])&&finite(s.levels[k.id],0,k.max))))return null;
         if(!Array.isArray(s.cooldowns)||s.cooldowns.length!==3||!s.cooldowns.every((v:number)=>finite(v,0,60)))return null;
-        if(!Array.isArray(s.enemies)||s.enemies.length>S.maxEnemies||!s.enemies.every((b:any)=>pos(b)&&['walker','runner'].indexOf(b.kind)>=0&&finite(b.max,1)&&finite(b.hp,1,b.max)))return null;
+        if(!Array.isArray(s.enemies)||s.enemies.length>S.maxEnemies||!s.enemies.every((b:any)=>pos(b)&&['walker','runner','brute'].indexOf(b.kind)>=0&&finite(b.max,1)&&finite(b.hp,1,b.max)))return null;
         if(!Array.isArray(s.bosses)||s.bosses.length>s.bossCount||!s.bosses.every((b:any)=>pos(b)&&finite(b.strength,1)&&finite(b.hp,1,Math.round(1800*b.strength))))return null;
         if(!Array.isArray(s.pickups)||s.pickups.length>64||!s.pickups.every((p:any)=>pos(p)&&finite(p.value,1)))return null;
         if(s.world!==undefined){const w=s.world;if(!w||!Number.isInteger(w.seed)||!finite(w.seed,0,0xffffffff)||!finite(w.originX,-1e12,1e12)||!finite(w.originZ,-1e12,1e12)||w.originX%36!==0||w.originZ%36!==0)return null;}
         if(s.waves!==undefined){const w=s.waves;
+            if(w?.killedSinceBoss!==undefined&&(!Number.isSafeInteger(w.killedSinceBoss)||!finite(w.killedSinceBoss,0,Number.MAX_SAFE_INTEGER)))return null;
             if(w?.nextRushWave!==undefined&&(!Number.isInteger(w.nextRushWave)||!finite(w.nextRushWave,S.rushEveryWaves,1e6+S.rushEveryWaves)||w.nextRushWave%S.rushEveryWaves!==0))return null;
             if(w?.rushRemaining!==undefined&&!finite(w.rushRemaining,0,S.rushDuration))return null;
-            if(!w||!Number.isInteger(w.wave)||!finite(w.wave,1,1e6)||!Number.isInteger(w.waveSpawned)||!finite(w.waveSpawned,0,Number.MAX_SAFE_INTEGER)||!Number.isInteger(w.spawnedSinceBoss)||!finite(w.spawnedSinceBoss,0,Number.MAX_SAFE_INTEGER)||w.spawnedSinceBoss<w.waveSpawned&&s.bosses.length===0||w.nextBossWave!==(s.bossCount+1)*S.bossEveryWaves||!finite(w.cooldown,0,S.baseSpawnInterval))return null;
+            if(!w||!Number.isInteger(w.wave)||!finite(w.wave,1,1e6)||!Number.isInteger(w.waveSpawned)||!finite(w.waveSpawned,0,Number.MAX_SAFE_INTEGER)||!Number.isInteger(w.spawnedSinceBoss)||!finite(w.spawnedSinceBoss,0,Number.MAX_SAFE_INTEGER)||w.nextBossWave!==(s.bossCount+1)*S.bossEveryWaves||!finite(w.cooldown,0,S.baseSpawnInterval))return null;
         }
         return s;
     }catch{return null;}

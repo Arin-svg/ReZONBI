@@ -282,6 +282,17 @@ export class GameBootstrap extends Component {
         // 10. Initialize combat
         // ------------------------------------
 
+        if(this.geometry.spriteAssets){
+            const assets=this.geometry.spriteAssets;
+            for(const kind of ['runner','brute'] as const)this.geometry.loadTexture('enemies/'+kind+'/texture',(error,texture)=>{
+                if(error)console.warn('Missing enemy artwork: '+kind,error);else assets[kind]=texture;
+            });
+            this.geometry.loadTexture('enemies/signal-tyrant-red-atlas/texture',(error,texture)=>{
+                if(error)console.warn('Missing red Tyrant atlas',error);else assets.bossAnimation=texture;
+            });
+            await this.geometry.texturesReady();
+            if(!isValid(this.node,true))return;
+        }
         const encounterNode =
             new Node('Combat Encounter');
 

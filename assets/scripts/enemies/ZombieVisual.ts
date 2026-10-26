@@ -1,5 +1,6 @@
 import { Material, MeshRenderer, Node } from 'cc';
 import { GeometryFactory } from '../levels/GeometryFactory';
+import type { ZombieKind } from './ZombieBase';
 import { WorldSpriteVisual } from '../player/WorldSpriteVisual';
 
 export class ZombieVisual {
@@ -15,7 +16,8 @@ export class ZombieVisual {
     private flash: Material;
     private sprite: WorldSpriteVisual|null = null;
     private wasDead = false;
-    constructor(parent: Node, g: GeometryFactory, private readonly runner: boolean) {
+    constructor(parent: Node, g: GeometryFactory, private readonly kind: ZombieKind) {
+        const runner=kind==='runner';
         this.root = new Node('Zombie Visual'); parent.addChild(this.root);
         const skin = runner ? '#8E8A98' : '#8D9C93', shirt = runner ? '#493444' : '#424959';
         g.form(this.root, 'Torn torso', shirt, 0, 1.05, 0, runner ? .38 : .7, .7, .38, 'taper');
@@ -46,10 +48,12 @@ export class ZombieVisual {
         g.part(this.root, 'Torn hem', '#B2A8A5', -0.1, 0.79, -0.19, 0.08, 0.2, 0.04);
         this.barBackground = g.part(parent, 'Health background', '#171D30', 0, 2.12, 0, 0.85, 0.075, 0.075);
         this.bar = g.part(parent, 'Enemy health', '#D56A91', 0, 2.13, 0, 0.8, 0.08, 0.08);
+        if(kind==='runner'){this.bar.setPosition(0,1.8,0);this.barBackground.setPosition(0,1.79,0);}
+        if(kind==='brute'){this.root.setScale(1.4,1.4,1.4);this.bar.setPosition(0,2.95,0);this.barBackground.setPosition(0,2.94,0);}
         this.warning = g.part(parent, 'Attack warning', '#D84A63', 0, 0.03, 0, 1.5, 0.02, 1.5, true); this.warning.active = false;
         this.renderers = this.root.getComponentsInChildren(MeshRenderer); this.originals = this.renderers.map(r => r.getSharedMaterial(0));
         this.flash = g.material('#FFE5E5');
-        if(g.spriteAssets){const a=g.spriteAssets;this.sprite=new WorldSpriteVisual(parent,a.camera,a.infected,a.effect,runner?'runner':'walker');this.root.active=false;}
+        if(g.spriteAssets){const a=g.spriteAssets;this.sprite=new WorldSpriteVisual(parent,a.camera,(kind==='walker'?a.infected:a[kind])??a.infected,a.effect,kind,null,null,null,null,null,null,kind!=='walker'&&!!a[kind]);this.root.active=false;}
     }
     tick(dt: number, speed: number, attack: boolean, hurt: boolean, death: number, fraction: number): void {
         if(this.sprite){
@@ -57,10 +61,10 @@ export class ZombieVisual {
             if(death>0)this.sprite.play('die',.7);else if(hurt)this.sprite.play('hurt',.12);else if(attack)this.sprite.play('slash',.12);
             this.sprite.animate(dt,speed);
         }
-        this.phase += dt * (this.runner ? 14 : 7);
+        this.phase += dt * ((this.kind==='runner') ? 14 : 7);
         this.legs.forEach((leg, i) => leg.setRotationFromEuler(Math.sin(this.phase + i * Math.PI) * 32 * speed, 0, 0));
         this.arms.forEach((arm, i) => arm.setRotationFromEuler(attack ? -115 : -30 + Math.sin(this.phase + i * Math.PI) * 15 * speed, 0, i ? -10 : 10));
-        this.root.setRotationFromEuler(death > 0 ? Math.min(1, death / 0.55) * 88 : (this.runner ? 29 : 13), 0, !this.runner && death <= 0 ? Math.sin(this.phase) * 5 * speed : 0);
+        this.root.setRotationFromEuler(death > 0 ? Math.min(1, death / 0.55) * 88 : ((this.kind==='runner') ? 29 : 13), 0, !(this.kind==='runner') && death <= 0 ? Math.sin(this.phase) * 5 * speed : 0);
         this.root.setPosition(0, speed * Math.abs(Math.sin(this.phase)) * 0.04, 0);
         this.bar.setScale(0.8 * Math.max(0.001, fraction), 0.08, 0.08); this.bar.active = this.barBackground.active = death <= 0 && fraction < 1;
         this.warning.active = attack && death <= 0;

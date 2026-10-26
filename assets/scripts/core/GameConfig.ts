@@ -8,7 +8,7 @@ export const GameConfig = {
 
 /** Visible billboard heights (excluding transparent padding), in world units. */
 export const SpriteConfig = {
-    runFPS: 12, characterHeight: 2.15, runnerHeight: 1.95, bossHeight: 4.2,
+    runFPS: 12, characterHeight: 2.15, runnerHeight: 1.65, bruteHeight: 2.8, bossHeight: 4.8,
 };
 
 export const Palette = {
@@ -21,13 +21,14 @@ export const Palette = {
 
 /** Endless survival balancing. Survival time excludes pauses and upgrade choices. */
 export const SurvivalConfig = {
-    bossEveryWaves: 5, bossSpawnThreshold: 50, bossStrengthMultiplier: 1.5, maxEnemies: 24, phaseSeconds: 30,
+    bossEveryWaves: 5, bossKillThreshold: 100, bossStrengthMultiplier: 1.5, maxEnemies: 24, phaseSeconds: 30,
     baseSpawnBudget: 8, waveGrowth: 1.25, baseSpawnInterval: 4, minSpawnInterval: .4, spawnGrowthPerMinute: .05,
     waveFrequencyGrowth: 1.10, speedEveryWaves: 5, speedGrowth: 1.03, maxSpeedMultiplier: 1.3,
     rushEveryWaves: 3, rushDuration: 10, rushFrequencyMultiplier: 4, rushMinInterval: .2,
+    bruteChances: [.12, .15, .18, .2, .22],
     runnerChances: [.1, .25, .4, .5, .55],
     minSpawnDistance: 7, maxSpawnDistance: 15,
-    walkerXP: 5, runnerXP: 8, bossXP: 100,
+    walkerXP: 5, runnerXP: 8, bruteXP: 15, bossXP: 100,
 };
 
 /** Spawn health grows 30% per minute, capped at 2.5x after five minutes. */
@@ -43,5 +44,6 @@ export const CombatConfig = {
     dodgeDistance: 3.5, dodgeDuration: 0.25, dodgeCooldown: 3, dodgeInvulnerability: 0.25,
     enemyRadius: 0.34, maxEnemies: 5, repathInterval: 0.5,
     walker: { hp: 80, speed: 2, damage: 15, range: 1.4, cooldown: 1.5, detection: 8, windup: 0.38 },
+    brute: { hp: 200, speed: 1.6, damage: 25, range: 1.6, cooldown: 1.8, detection: 10, windup: .55 },
     runner: { hp: 50, speed: 3.8, damage: 10, range: 1.3, cooldown: 0.9, detection: 11, windup: 0.25 },
 };

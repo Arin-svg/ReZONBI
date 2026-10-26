@@ -11,7 +11,7 @@ export class GeometryFactory {
         }});
     }
     texturesReady():Promise<void> {return this.pendingTextures?new Promise(resolve=>this.textureWaiters.push(resolve)):Promise.resolve();}
-    spriteAssets: {camera:Node; effect:EffectAsset; infected:Texture2D; boss?:Texture2D; bossWalk?:Texture2D} | null = null;
+    spriteAssets: {camera:Node; effect:EffectAsset; infected:Texture2D; runner?:Texture2D; brute?:Texture2D; boss?:Texture2D; bossAnimation?:Texture2D; bossWalk?:Texture2D} | null = null;
     private readonly boxMesh = utils.createMesh(primitives.box());
     private readonly sphereMesh = utils.createMesh(primitives.sphere(0.5, { segments: 10 }));
     private readonly materials = new Map<string, Material>();

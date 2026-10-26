@@ -28,7 +28,32 @@ const RIN_HEIGHT = [304,303,295,289];
 const RIN_FEET = [[318,318,319,319],[305,305,306,305],[297,296,297,293],[295,295,295,295]];
 const ACTION_HEIGHT = [292,284,263,258];
 const ACTION_FEET = [[305,299,301,299,300],[284,284,278,284,280],[263,263,254,262,255],[258,255,254,258,254]];
+// Explicit pixel crops: the supplied runner poses are staggered, not a uniform grid.
+// Front, back, left, right. Keep the last two right-facing crops separate at x=627/634.
+const RUNNER_CROPS = [
+    [[24,20,187,208],[218,35,409,209]],
+    [[23,407,171,584],[212,410,377,585],[416,407,587,585],[625,420,762,581]],
+    [[27,219,220,397],[235,233,426,396],[444,219,676,394],[716,225,941,396]],
+    [[19,596,194,775],[205,601,407,774],[420,592,627,774],[634,596,935,775]],
+];
+// Front, back, left, right. Bounds exclude neighbouring poses in this staggered sheet.
+const BRUTE_CROPS = [
+    [[30,13,227,213],[251,12,441,217],[463,13,677,217],[694,16,983,221]],
+    [[29,409,235,600],[261,407,478,603],[504,409,734,593],[759,420,965,595]],
+    [[41,216,209,404],[252,217,484,404],[517,219,721,408],[741,226,969,415]],
+    [[24,601,204,779],[217,604,427,779],[438,601,659,780],[700,602,978,779]],
+];
 const ENEMY_HEIGHT = [[300,293,285,288],[279,290,264,274]];
+// Measured source rectangles and ground pivots; keep the supplied pose order.
+// The fourth walk cell ends before the next pose (the old x=565 cut included it).
+const BOSS_CROPS = [
+    [0,0,164,153,89,146], [164,0,315,153,237,146],
+    [315,0,468,153,389.5,146], [468,0,628,153,539.5,146],
+    [0,153,152,309,87,297], [152,153,283,309,223,298],
+    [283,153,416,309,353,298], [416,153,550,309,479,297],
+];
+const BOSS_WALK_COLUMNS = [0,449,908,1340,1774];
+const BOSS_WALK_ROWS = [0,444,887];
 const ENEMY_FEET = [[312,312,316,313],[298,298,295,305],[285,284,288,278],[290,289,287,283]];
 
 /**
@@ -74,6 +99,7 @@ export class WorldSpriteVisual implements CharacterVisual {
     private width = 1;
     private height = 1;
     private footPadding = 0;
+    private pivotOffset = 0;
 
     private age = 0;
     private bossWalkTime = 0;
@@ -90,13 +116,15 @@ export class WorldSpriteVisual implements CharacterVisual {
         private camera: Node,
         private texture: Texture2D,
         effect: EffectAsset,
-        private kind: 'rin' | 'walker' | 'runner' | 'boss' = 'rin',
+        private kind: 'rin' | 'walker' | 'runner' | 'brute' | 'boss' = 'rin',
         private actions: Texture2D | null = null,
         private runRightAtlas: Texture2D | null = null,
         private runFrontAtlas: Texture2D | null = null,
         private runBackAtlas: Texture2D | null = null,
         private runLeftAtlas: Texture2D | null = null,
         private bossWalkAtlas: Texture2D | null = null,
+        private dedicatedEnemyAtlas = false,
+        private bossAnimationAtlas: Texture2D | null = null,
     ) {
 
         const nodeName =
@@ -112,6 +140,7 @@ export class WorldSpriteVisual implements CharacterVisual {
         // World-space character height
         this.size =
             kind === 'boss' ? SpriteConfig.bossHeight :
+            kind === 'brute' ? SpriteConfig.bruteHeight :
             kind === 'runner' ? SpriteConfig.runnerHeight : SpriteConfig.characterHeight;
         this.runAtlases = [runFrontAtlas, runBackAtlas, runLeftAtlas, runRightAtlas];
 
@@ -138,7 +167,9 @@ export class WorldSpriteVisual implements CharacterVisual {
 
         this.material.setProperty(
             'alphaThreshold',
-            0.45,
+            // The red atlas has a low-alpha matte outside the painted silhouette.
+            // Reject it without altering the source texture or other characters.
+            kind === 'boss' && bossAnimationAtlas ? .9 : 0.45,
         );
 
         this.material.setProperty(
@@ -255,7 +286,7 @@ export class WorldSpriteVisual implements CharacterVisual {
 
         this.age += delta;
         if (this.kind === 'boss' && moving > .04 && !this.terminal) {
-            this.bossWalkTime += delta * Math.min(1.8, moving / 2.1);
+            this.bossWalkTime += delta;
         }
 
         this.actionTime = Math.max(
@@ -348,6 +379,9 @@ export class WorldSpriteVisual implements CharacterVisual {
                 ? 2 + Math.floor(this.age * 6) % 2
                 : Math.floor(this.age * 2) % 2;
 
+        } else if(this.dedicatedEnemyAtlas){
+            const frames=this.kind==='runner'?RUNNER_CROPS[this.direction].length:4;
+            column=moving>.05?Math.floor(this.age*(this.kind==='runner'?9:5))%frames:0;
         } else {
 
             column =
@@ -379,15 +413,18 @@ export class WorldSpriteVisual implements CharacterVisual {
             (useAction ? 5 : 4) +
             column;
 
-        const useBossWalk = this.kind === 'boss' && this.bossWalkAtlas !== null;
-        const bossFrame = this.running && !this.terminal ? Math.floor(this.bossWalkTime * 8) % 8 : 0;
+        const useBossAnimation=this.kind==='boss'&&this.bossAnimationAtlas!==null;
+        const useBossWalk = this.kind === 'boss' && (this.bossWalkAtlas !== null || useBossAnimation);
+        const bossFrame = this.terminal ? 0 : useBossAnimation
+            ? (this.running ? 4 + Math.floor(this.bossWalkTime * 10 + 1e-8) % 4 : Math.floor(this.age * 10 + 1e-8) % 4)
+            : this.running ? Math.floor(this.bossWalkTime * 10 + 1e-8) % 8 : 0;
         const nextFrame =
             this.kind === 'boss' ? (useBossWalk ? bossFrame : 0) : useRunAtlas
                 ? runFrame
                 : atlasFrame;
 
         const nextTextureKey =
-            useBossWalk ? 'boss-walk' : useAction
+            useBossAnimation ? 'boss-red' : useBossWalk ? 'boss-walk' : useAction
                 ? 'actions'
                 : useRunAtlas
                     ? `run-${this.direction}`
@@ -403,7 +440,7 @@ export class WorldSpriteVisual implements CharacterVisual {
             this.textureKey = nextTextureKey;
 
             const selectedTexture =
-                useBossWalk ? this.bossWalkAtlas! : useAction
+                useBossAnimation ? this.bossAnimationAtlas! : useBossWalk ? this.bossWalkAtlas! : useAction
                     ? this.actions!
                     : useRunAtlas
                         ? runAtlas!
@@ -420,18 +457,27 @@ export class WorldSpriteVisual implements CharacterVisual {
 
             if (this.kind === 'boss') {
                 if (useBossWalk) {
-                    // Measured transparent gutters in the generated 1774x887 sheet.
-                    const columns = [0, 449, 908, 1340, 1774];
-                    const rows = [0, 444, 887];
+                    // Separate measured columns for the supplied idle and walk rows; retain the legacy atlas fallback.
+                    const columns = BOSS_WALK_COLUMNS;
+                    const rows = BOSS_WALK_ROWS;
                     const c = bossFrame % 4, r = Math.floor(bossFrame / 4);
-                    left = columns[c] / selectedTexture.width;
-                    right = columns[c + 1] / selectedTexture.width;
-                    top = rows[r] / selectedTexture.height;
-                    bottom = rows[r + 1] / selectedTexture.height;
+                    const crop = useBossAnimation ? BOSS_CROPS[bossFrame] : null;
+                    left = ((crop ? crop[0] : columns[c]) + .5) / selectedTexture.width;
+                    right = ((crop ? crop[2] : columns[c + 1]) - .5) / selectedTexture.width;
+                    top = ((crop ? crop[1] : rows[r]) + .5) / selectedTexture.height;
+                    bottom = ((crop ? crop[3] : rows[r + 1]) - .5) / selectedTexture.height;
                 } else {
                     left = top = 0;
                     right = bottom = 1;
                 }
+            } else if(this.dedicatedEnemyAtlas&&this.kind==='runner'){
+                const crop=RUNNER_CROPS[this.direction][column];
+                left=crop[0]/selectedTexture.width;right=crop[2]/selectedTexture.width;
+                top=crop[1]/selectedTexture.height;bottom=crop[3]/selectedTexture.height;
+            } else if(this.dedicatedEnemyAtlas){
+                const crop=BRUTE_CROPS[this.direction][column];
+                left=(crop[0]+.5)/selectedTexture.width;right=(crop[2]-.5)/selectedTexture.width;
+                top=(crop[1]+.5)/selectedTexture.height;bottom=(crop[3]-.5)/selectedTexture.height;
             } else if (useRunAtlas) {
 
                 // Eight equal-width frames in one row.
@@ -493,11 +539,11 @@ export class WorldSpriteVisual implements CharacterVisual {
 
             // Restore source aspect ratio and account for transparent padding.
             // Actions retain their crouched/dead heights relative to a standing pose.
-            const referenceHeight = this.kind === 'boss' ? (useBossWalk ? 400 : selectedTexture.height) : useRunAtlas ? RUN_HEIGHT[this.direction]
+            const referenceHeight = this.dedicatedEnemyAtlas?(this.kind==='brute'?208:190):this.kind === 'boss' ? (useBossAnimation ? 140 : useBossWalk ? 400 : selectedTexture.height) : useRunAtlas ? RUN_HEIGHT[this.direction]
                 : useAction ? ACTION_HEIGHT[this.direction]
                 : this.kind === 'rin' ? RIN_HEIGHT[this.direction]
                 : ENEMY_HEIGHT[this.kind === 'runner' ? 1 : 0][this.direction];
-            const feet = this.kind === 'boss' ? (useBossWalk ? [431,431,429,430,411,413,411,413][bossFrame] : selectedTexture.height) : useRunAtlas ? RUN_FEET[this.direction][runFrame]
+            const feet = this.dedicatedEnemyAtlas?(this.kind==='brute'?(BRUTE_CROPS[this.direction][column][3]-BRUTE_CROPS[this.direction][column][1]-1):(RUNNER_CROPS[this.direction][column][3]-RUNNER_CROPS[this.direction][column][1]-1)):this.kind === 'boss' ? (useBossAnimation ? (bossFrame<4?146:[144,145,145,144][bossFrame-4]) : useBossWalk ? [431,431,429,430,411,413,411,413][bossFrame] : selectedTexture.height) : useRunAtlas ? RUN_FEET[this.direction][runFrame]
                 : useAction ? ACTION_FEET[this.direction][column]
                 : this.kind === 'rin' ? RIN_FEET[this.direction][column]
                 : ENEMY_FEET[this.direction][column];
@@ -508,6 +554,11 @@ export class WorldSpriteVisual implements CharacterVisual {
             // Non-running cells have a one-pixel inset on each edge.
             this.footPadding = Math.max(0, pixelHeight - feet + (useRunAtlas || this.kind === 'boss' ? 0 : 1))
                 / referenceHeight * this.size;
+            if (useBossAnimation) {
+                const crop = BOSS_CROPS[bossFrame];
+                this.footPadding = (crop[3] - .5 - crop[5]) / referenceHeight * this.size;
+                this.pivotOffset = ((crop[0] + crop[2]) / 2 - crop[4]) / referenceHeight * this.size;
+            }
         }
 
         // 8. Face the camera
@@ -536,7 +587,7 @@ export class WorldSpriteVisual implements CharacterVisual {
 
         this.root.setScale(this.width, this.height * scaleY, 1);
         // Offset along billboard up, not world Y, so visible feet meet the actor origin.
-        this.offset.set(0, -this.footPadding * scaleY, 0);
+        this.offset.set(this.pivotOffset, -this.footPadding * scaleY, 0);
         Vec3.transformQuat(this.offset, this.offset, this.camera.worldRotation);
         Vec3.add(this.offset, this.offset, this.actor.worldPosition);
         this.root.setWorldPosition(this.offset);

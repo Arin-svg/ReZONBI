@@ -1,4 +1,5 @@
-import { Color, EventTouch, Graphics, Label, Node, UITransform, Widget } from 'cc';
+import { SpriteConfig } from '../core/GameConfig';
+import { Camera, Vec3, Color, EventTouch, Graphics, Label, Node, UITransform, Widget } from 'cc';
 import type { CombatEncounter } from '../core/CombatEncounter';
 import { label, panel, pin, typography, ui } from './ExplorationHUD';
 import { icon, disc, Accent } from './VisualTheme';
@@ -30,10 +31,10 @@ export class CombatHUD {
     private xpText: Label;
     private xpFill: Graphics;
     private xpKey = '';
-    private bossText: Label;
-    private bossFill: Graphics;
-    private lastBoss = -1;
-    constructor(scene: Node, private readonly encounter: CombatEncounter) {
+    private bossBars: {node:Node; fill:Graphics; fraction:number}[] = [];
+    private bossWorld = new Vec3();
+    private bossProjected = new Vec3();
+    constructor(scene: Node, private readonly encounter: CombatEncounter, private readonly camera:Camera) {
         const safe = scene.getChildByName('Mobile Canvas')!.getChildByName('Safe area')!;
         safe.getChildByName('Area heading')!.active = false; safe.getChildByName('Movement hint')!.active = false;
         const hp = label(safe, 'Player health', '', 300, 72, 18); panel(hp, 300, 72); pin(hp, 'left', 'top', 24, 20);
@@ -47,12 +48,6 @@ export class CombatHUD {
         const xw = xp.addComponent(Widget); xw.isAlignLeft = xw.isAlignTop = true; xw.left = 24; xw.top = 92; xw.alignMode = Widget.AlignMode.ALWAYS;
         this.xpText = xp.getComponentInChildren(Label)!; this.xpText.node.setPosition(0, 9, 0);typography(this.xpText,'label');
         const fill = ui(xp, 'EXP fill', 260, 8); fill.setPosition(0, -6, 0); this.xpFill = fill.addComponent(Graphics);
-        const boss = label(safe, 'Boss health', 'SIGNAL TYRANT', 380, 42, 18);
-        const bw = boss.addComponent(Widget); bw.isAlignHorizontalCenter = bw.isAlignTop = true; bw.top = 128; bw.alignMode = Widget.AlignMode.ALWAYS;
-        this.bossText = boss.getComponentInChildren(Label)!; boss.active = false;typography(this.bossText,'display');
-        this.bossText.node.setPosition(0, 9, 0);
-        this.bossText.node.getComponent(UITransform)!.setContentSize(380, 26);
-        const bf = ui(boss, 'Boss fill', 340, 10); bf.setPosition(0, -12, 0); this.bossFill = bf.addComponent(Graphics);
         const pistol = label(safe, 'Pistol button', '', 116, 116, 13); disc(pistol, 56); icon(pistol, 'bullet', 52).setPosition(0, 8, 0); pin(pistol, 'right', 'bottom', 28, 140);
         const knife = label(safe, 'Knife button', '', 100, 100, 13); disc(knife, 46, '#B5A0FF'); icon(knife, 'knife', 42).setPosition(0, 7, 0); pin(knife, 'right', 'bottom', 164, 28);
         const dodge = label(safe, 'Dodge button', '', 100, 100, 13); disc(dodge, 46, '#79BFFF'); icon(dodge, 'shadow', 42).setPosition(0, 7, 0); pin(dodge, 'right', 'bottom', 28, 28);
@@ -79,9 +74,31 @@ export class CombatHUD {
         this.node = ui(safe, 'HUD layer', 1280, 720);stretch(this.node);
         for (const child of [...safe.children]) if (child !== this.node) { child.removeFromParent(); this.node.addChild(child); }
         const blocked = [hp, count, pistol, knife, dodge, pause, replay, this.result, this.guide, this.node.getChildByName('Movement joystick')!];
-        blocked.push(xp, boss);
+        blocked.push(xp);
         encounter.combat.blocksMouse = p => encounter.paused || encounter.state !== 'playing' || encounter.selecting || blocked.some(n => n.activeInHierarchy && n.getComponent(UITransform)!.hitTest(p));
         this.refresh();
+    }
+    private refreshBossBars():void {
+        const bounds=this.node.getComponent(UITransform)!;
+        for(let i=0;i<this.encounter.bosses.length;i++){
+            const boss=this.encounter.bosses[i];
+            let bar=this.bossBars[i];
+            if(!bar){const node=ui(this.node,'Tyrant overhead health',72,8);node.setSiblingIndex(0);bar={node,fill:node.addComponent(Graphics),fraction:-1};this.bossBars.push(bar);}
+            bar.node.active=boss.active&&!boss.dead;
+            if(!bar.node.active)continue;
+            this.bossWorld.set(0,SpriteConfig.bossHeight+.22,0);
+            Vec3.transformQuat(this.bossWorld,this.bossWorld,this.camera.node.worldRotation);
+            Vec3.add(this.bossWorld,this.bossWorld,boss.node.worldPosition);
+            this.camera.convertToUINode(this.bossWorld,this.node,this.bossProjected);
+            bar.node.active=Math.abs(this.bossProjected.x)<bounds.width/2-36&&Math.abs(this.bossProjected.y)<bounds.height/2-4;
+            if(!bar.node.active)continue;
+            bar.node.setPosition(this.bossProjected);
+            const fraction=Math.max(0,Math.min(1,boss.health.current/boss.health.maximum));
+            if(bar.fraction===fraction)continue;
+            bar.fraction=fraction;const g=bar.fill;g.clear();
+            g.fillColor=new Color(27,25,39,230);g.rect(-36,-4,72,8);g.fill();
+            if(fraction>0){g.fillColor=new Color(250,78,99);g.rect(-35,-3,70*fraction,6);g.fill();}
+        }
     }
     private bind(node: Node, start: () => void, end: () => void = () => {}): void {
         node.on(Node.EventType.TOUCH_START, (event: EventTouch) => {
@@ -104,22 +121,7 @@ export class CombatHUD {
         const progress = e.progression; const buildKey = Skills.map(s => progress.rank(s.id)).join();
         if (this.skillKey !== buildKey) { this.skillKey = buildKey; this.skillRanks.forEach((l, i) => { const n = progress.rank(Skills[i].id); l.string = String(n); l.node.parent!.active = n > 0; }); }
         const key = `${progress.level}:${progress.xp}`;
-        const boss = e.bosses.find(boss => boss.active && !boss.dead) ?? e.boss;
-        this.bossText.node.parent!.active = e.bossSpawned && boss.active && !boss.dead;
-        const bossFraction = Math.max(0, Math.min(1, boss.health.current / boss.health.maximum));
-        if (e.bossSpawned && this.lastBoss !== bossFraction) {
-            this.lastBoss = bossFraction;
-            const g = this.bossFill; g.clear();
-            const strip = (width:number, color:Color) => {
-                if (width <= 0) return;
-                const tip = Math.min(5,width/2);
-                g.fillColor=color;g.moveTo(-170,0);g.lineTo(-170+tip,5);
-                g.lineTo(-170+width-tip,5);g.lineTo(-170+width,0);
-                g.lineTo(-170+width-tip,-5);g.lineTo(-170+tip,-5);g.close();g.fill();
-            };
-            strip(340,new Color(27,25,39,210));
-            strip(340*bossFraction,new Color(250,78,99));
-        }
+        this.refreshBossBars();
         if (key !== this.xpKey) {
             this.xpKey = key; text(this.xpText, `LV ${progress.level}  ?  EXP ${progress.xp} / ${requiredXP(progress.level)}`);
             this.xpFill.clear(); this.xpFill.fillColor = new Color(41, 36, 61); this.xpFill.rect(-130, -4, 260, 8); this.xpFill.fill();
