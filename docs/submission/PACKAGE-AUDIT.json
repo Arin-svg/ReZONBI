@@ -1,0 +1,49 @@
+﻿{
+    "date":  "2026-10-30",
+    "file":  "build/huawei-quick-game/dist/ReZONBI.rpk",
+    "bytes":  72860624,
+    "sha256":  "F0749E5A13077D7228E07C76B4E90905605B812351827A777621FB45BE5A3E50",
+    "largestEntries":  [
+                           {
+                               "FullName":  "assets/resources/native/c9/c91518c6-ea57-4fdc-96b1-a4e71d46430c.png",
+                               "CompressedLength":  4346402
+                           },
+                           {
+                               "FullName":  "assets/resources/native/d7/d78b7416-9efd-42b5-a600-2b321672a4ec.png",
+                               "CompressedLength":  4176530
+                           },
+                           {
+                               "FullName":  "assets/resources/native/8f/8fbba6da-e834-4531-8b0b-98cef1f5ad1c.png",
+                               "CompressedLength":  4002319
+                           },
+                           {
+                               "FullName":  "assets/resources/native/48/481e4fdb-41a3-4ceb-b464-e8d316529e2f.png",
+                               "CompressedLength":  3711185
+                           },
+                           {
+                               "FullName":  "assets/resources/native/b8/b881b7bc-4f50-474a-9edf-966ac7922d22.png",
+                               "CompressedLength":  3675465
+                           },
+                           {
+                               "FullName":  "assets/resources/native/36/36658d15-24af-4c8a-90c1-061cb76b37fd.png",
+                               "CompressedLength":  3598639
+                           },
+                           {
+                               "FullName":  "assets/resources/native/c2/c2d1116a-eb8f-49fa-9040-930f5f8c3f32.png",
+                               "CompressedLength":  3322745
+                           },
+                           {
+                               "FullName":  "assets/resources/native/1e/1eeae085-1cfd-4061-96b0-39f38542a45c.png",
+                               "CompressedLength":  3316939
+                           },
+                           {
+                               "FullName":  "assets/resources/native/7d/7dc0ed30-8b45-460e-a25b-0035e015f439.png",
+                               "CompressedLength":  3201032
+                           },
+                           {
+                               "FullName":  "assets/resources/native/3d/3d92a750-4e78-4d15-9179-49a93c88a814.png",
+                               "CompressedLength":  3108726
+                           }
+                       ],
+    "deviceTested":  false
+}

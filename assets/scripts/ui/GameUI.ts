@@ -10,7 +10,9 @@ import { staticGraphics } from './StaticUIGraphics';
 type Page='home'|'game'|'pause'|'settings'|'tutorial'|'defeat'|'victory'|'confirm'|'dialogue'|'stats';
 export type Notice='Zombie Rush!'|'Supply Found'|'Ammo Low'|'Health Low'|'Skill Ready'|'Door Locked'|'Item Obtained'|'Objective Updated'|'Area Cleared'|'Save Point';
 const SAVE='rezonbi.run.v1', SETTINGS='rezonbi.ui.settings.v1';
+const RECORD='rezonbi.record.v1';
 const TUTORIAL=[['SURVIVE NEW HAVEN','The infected are everywhere. Keep moving and stay alert.'],['EQUIPPED WEAPONS','Your pistol fires automatically at nearby visible enemies. Use the joystick to move, tap the sword to slash, and tap dodge to evade.'],['NOISE DETECTION','Automatic gunfire attracts more infected. Keep moving and use your sword when enemies surround you.'],['HEALTH AND DAMAGE','Your health is shown here. Avoid taking damage to survive longer.'],['MINIMAP','The minimap shows your position, enemies, and obstacles in the area.']];
+TUTORIAL.push(['YOUR NEXT CHALLENGE','Collect EXP, choose upgrades, and survive. A Tyrant returns after every 100 zombie kills. Defeat it and keep going.']);
 
 /** Screen flow owns UI pause only; simulation and combat remain in the encounter. */
 export class GameUI {
@@ -70,8 +72,17 @@ export class GameUI {
     private button(text:string,y:number,click:()=>void,primary=false,enabled=true,parent=this.content):Node {return action(parent,text,text,y,click,primary,enabled);}
     private saved(){try{return parseRun(sys.localStorage.getItem(SAVE));}catch{return null;}}
     private removeSave():void {try{sys.localStorage.removeItem(SAVE);}catch{/* storage unavailable */}}
+    private record():{kills:number;seconds:number} {
+        try{const r=JSON.parse(sys.localStorage.getItem(RECORD)||'{}');return {kills:Number.isSafeInteger(r.kills)&&r.kills>=0?r.kills:0,seconds:Number.isFinite(r.seconds)&&r.seconds>=0?r.seconds:0};}catch{return {kills:0,seconds:0};}
+    }
+    private updateRecord():void {
+        if(!this.started)return;
+        const r=this.record();
+        try{sys.localStorage.setItem(RECORD,JSON.stringify({kills:Math.max(r.kills,this.e.kills),seconds:Math.max(r.seconds,this.e.elapsed)}));}catch{/* Records are optional when storage is unavailable. */}
+    }
     save():boolean {
         if(!this.started||this.e.state!=='playing'||this.e.health.dead)return false;
+        this.updateRecord();
         try{sys.localStorage.setItem(SAVE,JSON.stringify(captureRun(this.e)));return true;}catch{return false;}
     }
     routePause():boolean {
@@ -107,6 +118,7 @@ export class GameUI {
             this.button('CONTINUE',-26,()=>this.resumeSaved(),false,!!this.saved(),left);
             this.button('SETTINGS',-97,()=>{this.back='home';this.show('settings');},false,true,left);
             this.button(sys.isNative?'EXIT':'EXIT',-168,()=>this.confirm('Exit Re:ZONBI?',()=>game.end(),'home'),false,sys.isNative,left);
+            this.button('STATS',-239,()=>{this.back='home';this.show('stats');},false,true,left);
 
         }else{
             const frame=ui(this.content,'Modal frame',600,570);panel(frame,600,570);
@@ -140,7 +152,9 @@ export class GameUI {
                 const next=this.button('NEXT',-125,()=>{this.tutorialPage++;this.show('tutorial');},true,this.tutorialPage<TUTORIAL.length-1,frame);next.setPosition(130,-125);next.setScale(.65,1,1);
                 this.button('BACK',-215,()=>this.show(this.back),false,true,frame);
             }else if(page==='stats'){
-                const s=this.saved();heading(frame,'RUN RECORD',210,35);heading(frame,s?`SAVED RUN\nLEVEL ${s.level}   /   ${s.kills} KILLS\n${Math.floor(s.elapsed/60)}m ${Math.floor(s.elapsed%60)}s`:'NO SAVED RUN',45,24);this.button('BACK',-190,()=>this.show(this.back),true,true,frame);
+                const s=this.saved(),r=this.record();heading(frame,'RUN RECORD',210,35);
+                heading(frame,`${getLanguage()==='ms'?'REKOD TERBAIK':'PERSONAL BEST'}\n${r.kills} ${getLanguage()==='ms'?'DITEWASKAN':'KILLS'} / ${Math.floor(r.seconds/60)}m ${Math.floor(r.seconds%60)}s`,115,22);
+                heading(frame,s?`SAVED RUN\nLEVEL ${s.level}   /   ${s.kills} KILLS\n${Math.floor(s.elapsed/60)}m ${Math.floor(s.elapsed%60)}s`:'NO SAVED RUN',-35,22);this.button('BACK',-190,()=>this.show(this.back),true,true,frame);
             }else if(page==='dialogue'){
                 artwork(frame,'ui/rin-portrait',150,150).setPosition(-155,145);heading(frame,'RIN',145,28);
                 heading(frame,this.dialogueLines[this.dialogueIndex]||'',-15,22);
@@ -175,7 +189,7 @@ export class GameUI {
     tick(dt:number):void {
         this.syncMusic();this.audio.tick(dt);
         this.layout();const e=this.e;
-        if(this.page==='game'&&e.state==='defeat'){this.removeSave();this.show('defeat');return;}
+        if(this.page==='game'&&e.state==='defeat'){this.updateRecord();this.removeSave();this.show('defeat');return;}
         if(this.page==='game'&&this.pendingClear&&!e.selecting){this.save();this.show('victory');return;}
         if(this.page!=='game'||e.selecting)return;
         if(this.holding&&this.holdAction){this.holdTime+=dt;copy(this.prompt,`HOLD  ${Math.min(100,Math.floor(this.holdTime/2*100))}%`);if(this.holdTime>=2){this.holding=false;const callback=this.holdAction;this.holdAction=null;callback();}}

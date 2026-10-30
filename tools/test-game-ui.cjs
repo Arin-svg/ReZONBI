@@ -100,3 +100,16 @@ for(const name of ['Knife button','Dodge button']){
 }
 assert.equal(swordTaps,1);assert.equal(dodgeTaps,1);
 console.log('PASS mobile HUD contains joystick, working sword/dodge and no Fire button');
+
+// Personal bests survive death/new runs, remain independent, and tolerate corrupt storage.
+storage.delete('rezonbi.record.v1');flow.started=true;e.kills=42;e.elapsed=180;
+flow.updateRecord();e.kills=12;e.elapsed=240;flow.updateRecord();
+assert.deepEqual(JSON.parse(storage.get('rezonbi.record.v1')),{kills:42,seconds:240});
+flow.show('home');click('STATS');assert.equal(flow.page,'stats');click('BACK');
+assert.equal(flow.page,'home');e.state='defeat';e.health.dead=true;flow.show('game');flow.tick(.1);
+assert.equal(storage.has('rezonbi.run.v1'),false);
+assert.deepEqual(JSON.parse(storage.get('rezonbi.record.v1')),{kills:42,seconds:240});
+flow.start();assert.deepEqual(JSON.parse(storage.get('rezonbi.record.v1')),{kills:42,seconds:240});
+storage.set('rezonbi.record.v1','{broken');assert.equal(flow.record().kills,0);
+storage.set('rezonbi.record.v1',JSON.stringify({kills:-1,seconds:'bad'}));assert.equal(flow.record().seconds,0);
+console.log('PASS accessible stats, independent personal bests, death/restart persistence and invalid-record fallback');

@@ -8,7 +8,7 @@ exports.throwError = true;
 function onBeforeMake(root) {
     const file = path.join(root, 'manifest.json');
     const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
-    manifest.name = 'Re';
+    manifest.name = 'Re:ZONBI';
     fs.writeFileSync(file, JSON.stringify(manifest));
     console.log('Re:ZONBI display name applied by source build extension');
 }

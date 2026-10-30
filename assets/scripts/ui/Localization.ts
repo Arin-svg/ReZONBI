@@ -6,6 +6,8 @@ let language: Language = 'en';
 try { language = sys.localStorage.getItem(KEY) === 'ms' ? 'ms' : 'en'; } catch { /* English default */ }
 const sources = new WeakMap<Label, { source: string; language: Language; rendered: string }>();
 const ms: Record<string, string> = {
+    'YOUR NEXT CHALLENGE': 'CABARAN SETERUSNYA',
+    'Collect EXP, choose upgrades, and survive. A Tyrant returns after every 100 zombie kills. Defeat it and keep going.': 'Kumpul EXP, pilih naik taraf dan terus bertahan. Tyrant kembali selepas setiap 100 zombi ditewaskan. Tewaskannya dan teruskan perjuangan.',
     '▶   START': '▶   MULA', 'CONTINUE': 'SAMBUNG', 'SETTINGS': 'TETAPAN', 'EXIT': 'KELUAR',
     'STATS': 'STATISTIK', 'WELCOME TO NEW HAVEN': 'SELAMAT DATANG KE NEW HAVEN',
     'PAUSED': 'DIJEDA', 'PAUSE': 'JEDA', 'RESUME': 'SAMBUNG', 'TUTORIAL': 'PANDUAN',

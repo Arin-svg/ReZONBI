@@ -1,5 +1,7 @@
 # Re:ZONBI development checklist
 
+> Submission update, 30 October 2026: see [current readiness](submission/READINESS.md), [user guide](submission/USER-GUIDE.md), [pitch script](submission/PITCH-SCRIPT.md), and [credits register](submission/CREDITS.md). The older status below is historical: menus, settings, audio, local saves, localization, and personal bests now exist. HMS is out of scope by entrant decision. The fresh RPK is 72,860,624 bytes; the old size figures below do not describe the current package. Physical-device verification remains pending.
+
 ## Current playable — roguelite vertical slice, 2026-10-19
 
 The user's roguelite direction supersedes the five-enemy M2 encounter and planned five-wave upgrade loop. The existing Main.scene now launches endless Horde Survival: active combat, pooled EXP drops, leveling, three-choice upgrades, six functioning skills, increasing spawn pressure, local hearing/global noise, and a two-phase Signal Tyrant after 120 active seconds. Defeating the boss does not end the run; only Rin's death ends it, and replay resets all run state.
