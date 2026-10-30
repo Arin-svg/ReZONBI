@@ -171,6 +171,27 @@ for(const facing of [[1,0,1],[-1,0,-1],[-1,0,1],[1,0,-1]]){
 Vec3.transformQuat=transform;
 grounded.play('hurt',.12);grounded.animate(.05,0);assert.equal(grounded.state,'hurt');
 grounded.play('die',.7);
-for(let i=0;i<8;i++){grounded.play('die',.7);grounded.animate(.1,0);assert.equal(grounded.frame,0);}
+for(let i=0;i<8;i++){grounded.play('die',.7);grounded.animate(.1,0);assert.equal(grounded.frame,8+Math.min(6,i+1));}
 grounded.reset();assert.equal(grounded.state,'idle');assert.equal(grounded.frame,0);
+for(const [action,duration,start,count] of [['die',.7,8,7]]){
+ grounded.reset();grounded.play(action,duration);grounded.animate(0,0);
+ const seen=new Set([grounded.frame]);
+ for(let i=0;i<count-1;i++){
+  grounded.animate(.1,0);seen.add(grounded.frame);
+  const uv=grounded.material.getProperty('tilingOffset');
+  assert.ok(uv.x>0&&uv.y>0&&uv.z>=0&&uv.w>=0&&uv.x+uv.z<=1&&uv.y+uv.w<=1);
+  near(grounded.root.scale.x/(uv.x*2172),grounded.root.scale.y/(uv.y*724));
+  assert.ok(Number.isFinite(grounded.root.worldPosition.y));
+  const before=grounded.frame;grounded.animate(0,0);assert.equal(grounded.frame,before);
+ }
+ assert.deepEqual([...seen],Array.from({length:count},(_,i)=>start+i));
+ grounded.animate(.15,0);
+ assert.equal(grounded.state,action==='die'?'die':'idle');
+}
+for(const action of ['slash','hurt']){
+ grounded.reset();grounded.play(action,.3);grounded.animate(.1,0);
+ assert.ok(grounded.frame<4,'attack/hurt keep existing idle poses');
+ grounded.animate(.1,2.1);assert.ok(grounded.frame>=4&&grounded.frame<8,'attack/hurt keep walking poses');
+}
+console.log('PASS seven-pose death, pause, aspect ratio, and no attack/recoil clips');
 console.log('PASS Tyrant measured crops, aspect ratio, 2–2.5x visible height, ground pivots, world depth, turn continuity, cached resources and terminal death');

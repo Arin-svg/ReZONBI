@@ -1,11 +1,13 @@
 import { Color, Graphics, Node } from 'cc';
 import { ui } from './ExplorationHUD';
+import { staticGraphics } from './StaticUIGraphics';
 
 export const Accent = { bullet: '#FF779F', blade: '#B5A0FF', shadow: '#79BFFF', pulse: '#6CE5FF', blood: '#FFA9B6', magnet: '#7AE3BE' };
 export type Icon = keyof typeof Accent | 'knife' | 'pause' | 'play' | 'portrait';
 /** Original vector glyphs: crisp at phone sizes, no texture dependency. */
 export function icon(parent: Node, kind: Icon, size: number, tint = '#F5E7F0'): Node {
-    const n = ui(parent, 'Icon ' + kind, size, size), g = n.addComponent(Graphics), s = size / 64;
+    const n = ui(parent, 'Icon ' + kind, size, size), s = size / 64;
+    staticGraphics(n, g => {
     const polygon = (points: number[][], c: string) => { g.fillColor = new Color().fromHEX(c); g.moveTo(points[0][0] * s, points[0][1] * s); points.slice(1).forEach(p => g.lineTo(p[0] * s, p[1] * s)); g.close(); g.fill(); };
     const line = (points: number[][], width = 3) => { g.strokeColor = new Color().fromHEX(tint); g.lineWidth = width * s; g.moveTo(points[0][0] * s, points[0][1] * s); points.slice(1).forEach(p => g.lineTo(p[0] * s, p[1] * s)); g.stroke(); };
     if (kind === 'bullet') {
@@ -37,10 +39,10 @@ export function icon(parent: Node, kind: Icon, size: number, tint = '#F5E7F0'): 
         polygon([[-19,-17],[-7,-11],[0,-20],[8,-11],[22,-21],[27,-31],[-27,-31]], '#242538');
         polygon([[-6,-18],[0,-23],[7,-18],[4,-30],[-3,-30]], '#ED547F');
     }
-    return n;
+    }); return n;
 }
 export function disc(parent: Node, radius: number, tint = '#FF779F'): Graphics {
-    const g = parent.addComponent(Graphics); g.fillColor = new Color(12, 18, 34, 185); g.circle(0, 0, radius); g.fill();
+    return staticGraphics(parent, g => { g.fillColor = new Color(12, 18, 34, 185); g.circle(0, 0, radius); g.fill();
     g.strokeColor = new Color().fromHEX(tint); g.lineWidth = 2; g.stroke();
-    g.strokeColor = new Color(148, 172, 203, 70); g.lineWidth = 1; g.circle(0, 0, radius - 6); g.stroke(); return g;
+    g.strokeColor = new Color(148, 172, 203, 70); g.lineWidth = 1; g.circle(0, 0, radius - 6); g.stroke(); });
 }

@@ -51,6 +51,11 @@ const BOSS_CROPS = [
     [315,0,468,153,389.5,146], [468,0,628,153,539.5,146],
     [0,153,152,309,87,297], [152,153,283,309,223,298],
     [283,153,416,309,353,298], [416,153,550,309,479,297],
+    // Seven collapse poses; preserve source pixel scale throughout death.
+    [8,600,149,724,87,712], [149,600,266,724,210,711],
+    [266,600,410,724,339,711], [410,600,562,724,486,711],
+    [562,600,727,724,644,711], [727,600,884,724,805,711],
+    [884,600,1044,724,964,711],
 ];
 const BOSS_WALK_COLUMNS = [0,449,908,1340,1774];
 const BOSS_WALK_ROWS = [0,444,887];
@@ -106,6 +111,7 @@ export class WorldSpriteVisual implements CharacterVisual {
     private running = false;
 
     private actionTime = 0;
+    private bossActionAge = 0;
     private action: CharacterAction | '' = '';
     private terminal = false;
 
@@ -247,6 +253,10 @@ export class WorldSpriteVisual implements CharacterVisual {
             return;
         }
 
+        if (this.kind === 'boss' && action === 'die') {
+            this.bossActionAge = 0;
+        }
+
         this.action = action;
         this.actionTime = duration;
 
@@ -262,6 +272,7 @@ export class WorldSpriteVisual implements CharacterVisual {
 
         this.action = '';
         this.actionTime = 0;
+        this.bossActionAge = 0;
         this.terminal = false;
 
         this.age = 0;
@@ -285,6 +296,7 @@ export class WorldSpriteVisual implements CharacterVisual {
         const delta = Math.max(0, dt);
 
         this.age += delta;
+        if (this.kind === 'boss') this.bossActionAge += delta;
         if (this.kind === 'boss' && moving > .04 && !this.terminal) {
             this.bossWalkTime += delta;
         }
@@ -415,7 +427,9 @@ export class WorldSpriteVisual implements CharacterVisual {
 
         const useBossAnimation=this.kind==='boss'&&this.bossAnimationAtlas!==null;
         const useBossWalk = this.kind === 'boss' && (this.bossWalkAtlas !== null || useBossAnimation);
-        const bossFrame = this.terminal ? 0 : useBossAnimation
+        const bossActionFrame = Math.floor(this.bossActionAge * 10 + 1e-8);
+        const bossFrame = useBossAnimation && this.state === 'die' ? 8 + Math.min(6, bossActionFrame)
+            : this.terminal ? 0 : useBossAnimation
             ? (this.running ? 4 + Math.floor(this.bossWalkTime * 10 + 1e-8) % 4 : Math.floor(this.age * 10 + 1e-8) % 4)
             : this.running ? Math.floor(this.bossWalkTime * 10 + 1e-8) % 8 : 0;
         const nextFrame =
@@ -543,7 +557,7 @@ export class WorldSpriteVisual implements CharacterVisual {
                 : useAction ? ACTION_HEIGHT[this.direction]
                 : this.kind === 'rin' ? RIN_HEIGHT[this.direction]
                 : ENEMY_HEIGHT[this.kind === 'runner' ? 1 : 0][this.direction];
-            const feet = this.dedicatedEnemyAtlas?(this.kind==='brute'?(BRUTE_CROPS[this.direction][column][3]-BRUTE_CROPS[this.direction][column][1]-1):(RUNNER_CROPS[this.direction][column][3]-RUNNER_CROPS[this.direction][column][1]-1)):this.kind === 'boss' ? (useBossAnimation ? (bossFrame<4?146:[144,145,145,144][bossFrame-4]) : useBossWalk ? [431,431,429,430,411,413,411,413][bossFrame] : selectedTexture.height) : useRunAtlas ? RUN_FEET[this.direction][runFrame]
+            const feet = this.dedicatedEnemyAtlas?(this.kind==='brute'?(BRUTE_CROPS[this.direction][column][3]-BRUTE_CROPS[this.direction][column][1]-1):(RUNNER_CROPS[this.direction][column][3]-RUNNER_CROPS[this.direction][column][1]-1)):this.kind === 'boss' ? (useBossAnimation ? (BOSS_CROPS[bossFrame][5]-BOSS_CROPS[bossFrame][1]) : useBossWalk ? [431,431,429,430,411,413,411,413][bossFrame] : selectedTexture.height) : useRunAtlas ? RUN_FEET[this.direction][runFrame]
                 : useAction ? ACTION_FEET[this.direction][column]
                 : this.kind === 'rin' ? RIN_FEET[this.direction][column]
                 : ENEMY_FEET[this.direction][column];
@@ -579,7 +593,7 @@ export class WorldSpriteVisual implements CharacterVisual {
         }
 
         if (
-            !useAction &&
+            !useAction && !useBossAnimation &&
             this.state === 'die'
         ) {
             scaleY = 0.18;

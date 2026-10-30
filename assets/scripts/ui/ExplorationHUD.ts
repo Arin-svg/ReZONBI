@@ -2,6 +2,8 @@ import { Camera, Canvas, Color, Graphics, Label, Layers, Node, SafeArea, UITrans
 import { Palette as P } from '../core/GameConfig';
 import { PlayerController } from '../player/PlayerController';
 import { MobileJoystick } from './MobileJoystick';
+import { localizedText } from './Localization';
+import { staticGraphics } from './StaticUIGraphics';
 
 export function ui(parent: Node, name: string, width: number, height: number): Node {
     const node = new Node(name); node.layer = Layers.Enum.UI_2D; parent.addChild(node);
@@ -26,7 +28,7 @@ export function typography(text: Label, role: 'display' | 'label' | 'body' = 'bo
 export function label(parent: Node, name: string, text: string, width: number, height: number, size: number): Node {
     const node = ui(parent, name, width, height);
     const textNode = ui(node, 'Text', width, height); const l = textNode.addComponent(Label);
-    l.string = text; l.fontSize = size; typography(l);
+    localizedText(l, text); l.fontSize = size; typography(l);
     l.color = new Color().fromHEX(P.white); l.horizontalAlign = Label.HorizontalAlign.CENTER;
     l.overflow = Label.Overflow.SHRINK;
     l.cacheMode = Label.CacheMode.BITMAP;
@@ -34,12 +36,12 @@ export function label(parent: Node, name: string, text: string, width: number, h
 }
 export function panel(node: Node, width: number, height: number): void {
     const background = ui(node, 'Panel', width, height); background.setSiblingIndex(0);
-    const g = background.addComponent(Graphics); g.fillColor = new Color(8, 13, 26, 238);
+    staticGraphics(background, g => { g.fillColor = new Color(8, 13, 26, 238);
     const x=width/2,y=height/2,c=12;
     g.moveTo(-x+c,-y);g.lineTo(x,-y);g.lineTo(x,y-c);g.lineTo(x-c,y);g.lineTo(-x,y);g.lineTo(-x,-y+c);g.close();g.fill();
     g.strokeColor = new Color(89,111,139,170); g.lineWidth = 1; g.stroke();
     g.strokeColor = new Color().fromHEX('#F42678');g.lineWidth=2;g.moveTo(-x+c,-y);g.lineTo(-x+width*.36,-y);g.stroke();
-    g.strokeColor = new Color().fromHEX('#45CEE4');g.lineWidth=1;g.moveTo(x-38,y);g.lineTo(x-c,y);g.stroke();
+    g.strokeColor = new Color().fromHEX('#45CEE4');g.lineWidth=1;g.moveTo(x-38,y);g.lineTo(x-c,y);g.stroke(); });
 }
 
 export function buildExplorationHUD(parent: Node, player: PlayerController): MobileJoystick {
@@ -62,20 +64,20 @@ export function buildExplorationHUD(parent: Node, player: PlayerController): Mob
     const instruction = label(safe, 'Movement hint', 'Explore the streets\nWASD / arrows or left joystick', 380, 68, 20);
     panel(instruction, 380, 68); pin(instruction, 'right', 'bottom', 24, 24);
     const joystickNode = ui(safe, 'Movement joystick', 184, 184); pin(joystickNode, 'left', 'bottom', 32, 32);
-    const base = joystickNode.addComponent(Graphics);
+    staticGraphics(joystickNode, base => {
     base.fillColor = new Color(23, 29, 48, 155); base.circle(0, 0, 86); base.fill();
     base.lineWidth = 2; base.strokeColor = new Color(244, 38, 120, 195); base.stroke();
-    base.lineWidth = 1; base.circle(0, 0, 68); base.stroke();
-    const thumb = ui(joystickNode, 'Thumb', 64, 64); const tg = thumb.addComponent(Graphics);
+    base.lineWidth = 1; base.circle(0, 0, 68); base.stroke(); });
+    const thumb = ui(joystickNode, 'Thumb', 64, 64); staticGraphics(thumb, tg => {
     tg.fillColor = new Color(154, 178, 201, 210); tg.circle(0, 0, 29); tg.fill();
-    tg.strokeColor = new Color().fromHEX(P.white); tg.lineWidth = 2; tg.stroke();
+    tg.strokeColor = new Color().fromHEX(P.white); tg.lineWidth = 2; tg.stroke(); });
     const joystick = joystickNode.addComponent(MobileJoystick); joystick.setThumb(thumb);
     const pause = label(safe, 'Pause button', 'PAUSE', 132, 58, 22); panel(pause, 132, 58); pin(pause, 'right', 'top', 24, 24);
     const pauseLabel = pause.getComponentInChildren(Label)!;
     const overlay = label(safe, 'Paused hint', 'PAUSED\nTap RESUME to continue', 410, 110, 28); panel(overlay, 410, 110); overlay.active = false;
     pause.on(Node.EventType.TOUCH_END, () => {
         player.paused = !player.paused; player.clearInput(); joystick.enabled = !player.paused;
-        pauseLabel.string = player.paused ? 'RESUME' : 'PAUSE'; overlay.active = player.paused;
+        localizedText(pauseLabel, player.paused ? 'RESUME' : 'PAUSE'); overlay.active = player.paused;
     });
     return joystick;
 }

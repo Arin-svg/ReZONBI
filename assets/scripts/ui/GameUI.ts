@@ -4,11 +4,13 @@ import type { CombatEncounter } from '../core/CombatEncounter';
 import { captureRun, parseRun, restoreRun } from '../systems/RunCheckpoint';
 import { action, artwork, copy, entrance, heading, stretch } from './CyberWidgets';
 import { label, panel, pin, typography, ui } from './ExplorationHUD';
+import { getLanguage, setLanguage } from './Localization';
+import { staticGraphics } from './StaticUIGraphics';
 
 type Page='home'|'game'|'pause'|'settings'|'tutorial'|'defeat'|'victory'|'confirm'|'dialogue'|'stats';
 export type Notice='Zombie Rush!'|'Supply Found'|'Ammo Low'|'Health Low'|'Skill Ready'|'Door Locked'|'Item Obtained'|'Objective Updated'|'Area Cleared'|'Save Point';
 const SAVE='rezonbi.run.v1', SETTINGS='rezonbi.ui.settings.v1';
-const TUTORIAL=[['SURVIVE NEW HAVEN','The infected are everywhere. Keep moving and stay alert.'],['EQUIPPED WEAPONS','Your pistol has unlimited ammo. Area slash is a short-range attack that can hit multiple enemies.'],['NOISE DETECTION','Gunfire attracts more infected. Keep moving after you shoot.'],['HEALTH AND DAMAGE','Your health is shown here. Avoid taking damage to survive longer.'],['MINIMAP','The minimap shows your position, enemies, and obstacles in the area.']];
+const TUTORIAL=[['SURVIVE NEW HAVEN','The infected are everywhere. Keep moving and stay alert.'],['EQUIPPED WEAPONS','Your pistol fires automatically at nearby visible enemies. Use the joystick to move, tap the sword to slash, and tap dodge to evade.'],['NOISE DETECTION','Automatic gunfire attracts more infected. Keep moving and use your sword when enemies surround you.'],['HEALTH AND DAMAGE','Your health is shown here. Avoid taking damage to survive longer.'],['MINIMAP','The minimap shows your position, enemies, and obstacles in the area.']];
 
 /** Screen flow owns UI pause only; simulation and combat remain in the encounter. */
 export class GameUI {
@@ -47,7 +49,6 @@ export class GameUI {
         this.audio=new AudioManager(e.node);
         this.safe=e.node.parent!.getChildByName('Mobile Canvas')!.getChildByName('Safe area')!;
         const minimap=ui(e.hud.node,'Minimap',128,128);pin(minimap,'right','top',94,20);this.map=minimap.addComponent(Graphics);
-        const blocks=e.combat.blocksMouse;e.combat.blocksMouse=p=>blocks(p)||minimap.getComponent(UITransform)!.hitTest(p);
         this.toast=label(e.hud.node,'Notification','',390,62,18);panel(this.toast,390,62);pin(this.toast,'left','top',24,195);this.toast.active=false;
         const detail=this.toast.getComponentInChildren(Label)!;detail.fontSize=15;detail.lineHeight=18;detail.node.getComponent(UITransform)!.setContentSize(362,36);detail.node.setPosition(0,-12);
         this.toastTitle=label(this.toast,'Notification heading','',362,22,16);this.toastTitle.setPosition(0,18);typography(this.toastTitle.getComponentInChildren(Label)!,'label');
@@ -55,7 +56,7 @@ export class GameUI {
         this.popup=label(e.hud.node,'Item popup','',240,56,18);panel(this.popup,240,56);pin(this.popup,'right','top',24,205);this.popup.active=false;
         this.overlay=ui(this.safe,'Game screens',1280,720);stretch(this.overlay);this.overlay.addComponent(BlockInputEvents);
         this.art=artwork(this.overlay,'ui/menu-background',1280,720);
-        const shade=ui(this.overlay,'Screen shade',10000,10000);const g=shade.addComponent(Graphics);g.fillColor=new Color(3,6,16,155);g.rect(-5000,-5000,10000,10000);g.fill();
+        const shade=ui(this.overlay,'Screen shade',10000,10000);staticGraphics(shade,g=>{g.fillColor=new Color(3,6,16,155);g.rect(-5000,-5000,10000,10000);g.fill();});
         this.content=ui(this.overlay,'Screen content',960,620);
         try{const data=JSON.parse(sys.localStorage.getItem(SETTINGS)||'{}');this.quality=data.quality==='low'?'low':'high';}catch{/* defaults */}
         this.applyQuality();this.show('home');
@@ -107,7 +108,6 @@ export class GameUI {
             this.button('SETTINGS',-97,()=>{this.back='home';this.show('settings');},false,true,left);
             this.button(sys.isNative?'EXIT':'EXIT',-168,()=>this.confirm('Exit Re:ZONBI?',()=>game.end(),'home'),false,sys.isNative,left);
 
-            const stats=this.button('STATS',245,()=>{this.back='home';this.show('stats');});stats.setPosition(295,245);stats.getComponent(UITransform)!.setContentSize(150,58);stats.setScale(.55,.8,1);
         }else{
             const frame=ui(this.content,'Modal frame',600,570);panel(frame,600,570);
             if(page==='pause'){
@@ -131,7 +131,7 @@ export class GameUI {
                 this.audioSlider(frame,'music',130);
                 this.audioSlider(frame,'sfx',60);
                 this.button('GRAPHICS  ‹  '+this.quality.toUpperCase()+'  ›',-10,()=>{this.quality=this.quality==='high'?'low':'high';this.applyQuality();try{sys.localStorage.setItem(SETTINGS,JSON.stringify({quality:this.quality}));}catch{}this.show('settings');},false,true,frame);
-                this.button('LANGUAGE: ENGLISH',-80,()=>{},false,false,frame);
+                this.button('LANGUAGE: ENGLISH',-80,()=>{setLanguage(getLanguage()==='en'?'ms':'en',this.safe);this.show('settings');},false,true,frame);
                 heading(frame,'',-140,14);this.button('BACK',-210,()=>this.show(this.back),true,true,frame);
             }else if(page==='tutorial'){
                 heading(frame,'FIELD GUIDE',220,34);heading(frame,TUTORIAL[this.tutorialPage][0],140,23);

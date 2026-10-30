@@ -2,6 +2,8 @@ import { BlockInputEvents, Color, EventTouch, Graphics, Label, Node, tween, Twee
 import { Accent, disc, icon } from './VisualTheme';
 import { Progression, SkillId } from '../systems/Progression';
 import { label, panel, typography, ui } from './ExplorationHUD';
+import { localizedText } from './Localization';
+import { staticGraphics } from './StaticUIGraphics';
 
 export class SkillSelectionUI {
     readonly node: Node;
@@ -15,8 +17,8 @@ export class SkillSelectionUI {
         const fit = this.node.addComponent(Widget); fit.isAlignLeft = fit.isAlignRight = fit.isAlignTop = fit.isAlignBottom = true;
         fit.left = fit.right = fit.top = fit.bottom = 0; fit.alignMode = Widget.AlignMode.ALWAYS;
         this.node.addComponent(BlockInputEvents);
-        const dim = ui(this.node, 'Dimmed world', 10000, 10000); const shade = dim.addComponent(Graphics);
-        shade.fillColor = new Color(6, 10, 22, 190); shade.rect(-5000, -5000, 10000, 10000); shade.fill();
+        const dim = ui(this.node, 'Dimmed world', 10000, 10000); staticGraphics(dim, shade => {
+        shade.fillColor = new Color(6, 10, 22, 190); shade.rect(-5000, -5000, 10000, 10000); shade.fill(); });
         const backing = ui(this.node, 'Upgrade panel', 880, 420); panel(backing, 880, 420);
         const title = label(backing, 'Level up title', 'LEVEL UP', 840, 36, 29); title.setPosition(0, 174, 0);typography(title.getComponentInChildren(Label)!,'display');
         label(backing, 'Level up subtitle', 'Choose an upgrade', 840, 24, 17).setPosition(0, 140, 0);
@@ -34,7 +36,7 @@ export class SkillSelectionUI {
             card.on(Node.EventType.TOUCH_CANCEL, (e: EventTouch) => { if (owner === e.getID()) owner = null; });
             card.on(Node.EventType.TOUCH_END, (e: EventTouch) => {
                 e.propagationStopped = true; if (owner !== e.getID()) return; owner = null;
-                if (card.getComponent(UITransform)!.hitTest(e.getLocation())) { const skill = progression.offers[i]; if (skill) choose(skill.id); }
+                if (card.getComponent(UITransform)!.hitTest(e.getLocation(), e.windowId)) { const skill = progression.offers[i]; if (skill) choose(skill.id); }
             }); this.cards.push(card);
         }
         this.node.active = false;
@@ -54,9 +56,9 @@ export class SkillSelectionUI {
             c.setPosition((i - (this.progression.offers.length - 1) / 2) * 280, -20, 0);
             for (const child of [...this.icons[i].children]) { child.removeFromParent(); child.destroy(); }
             icon(this.icons[i], s.id, 46, Accent[s.id]);
-            this.names[i].string = s.name;
-            this.levels[i].string = `LV ${rank} → ${rank + 1}`;
-            c.getComponentInChildren(Label)!.string = s.describe(rank + 1);
+            localizedText(this.names[i], s.name);
+            localizedText(this.levels[i], `LV ${rank} → ${rank + 1}`);
+            localizedText(c.getComponentInChildren(Label)!, s.describe(rank + 1));
         });
     }
 }

@@ -6,6 +6,7 @@ import { icon, disc, Accent } from './VisualTheme';
 import { artwork, stretch } from './CyberWidgets';
 import { Skills } from '../systems/Progression';
 import { requiredXP } from '../systems/Progression';
+import { localizedText } from './Localization';
 
 /** Extends the existing safe-area Canvas and joystick; no parallel input system. */
 export class CombatHUD {
@@ -14,7 +15,6 @@ export class CombatHUD {
     private healthText: Label;
     private healthFill: Graphics;
     private count: Label;
-    private pistol: Label;
     private knife: Label;
     private dodge: Label;
     private pause: Label;
@@ -48,12 +48,10 @@ export class CombatHUD {
         const xw = xp.addComponent(Widget); xw.isAlignLeft = xw.isAlignTop = true; xw.left = 24; xw.top = 92; xw.alignMode = Widget.AlignMode.ALWAYS;
         this.xpText = xp.getComponentInChildren(Label)!; this.xpText.node.setPosition(0, 9, 0);typography(this.xpText,'label');
         const fill = ui(xp, 'EXP fill', 260, 8); fill.setPosition(0, -6, 0); this.xpFill = fill.addComponent(Graphics);
-        const pistol = label(safe, 'Pistol button', '', 116, 116, 13); disc(pistol, 56); icon(pistol, 'bullet', 52).setPosition(0, 8, 0); pin(pistol, 'right', 'bottom', 28, 140);
         const knife = label(safe, 'Knife button', '', 100, 100, 13); disc(knife, 46, '#B5A0FF'); icon(knife, 'knife', 42).setPosition(0, 7, 0); pin(knife, 'right', 'bottom', 164, 28);
         const dodge = label(safe, 'Dodge button', '', 100, 100, 13); disc(dodge, 46, '#79BFFF'); icon(dodge, 'shadow', 42).setPosition(0, 7, 0); pin(dodge, 'right', 'bottom', 28, 28);
-        this.pistol = pistol.getComponentInChildren(Label)!; this.knife = knife.getComponentInChildren(Label)!; this.dodge = dodge.getComponentInChildren(Label)!;
-        for (const l of [this.pistol, this.knife, this.dodge]) { l.node.setPosition(0, -29, 0);typography(l,'label'); } this.pistol.string = 'HOLD';
-        this.bind(pistol, () => encounter.combat.setFire('touch-pistol', true), () => encounter.combat.setFire('touch-pistol', false));
+        this.knife = knife.getComponentInChildren(Label)!; this.dodge = dodge.getComponentInChildren(Label)!;
+        for (const l of [this.knife, this.dodge]) { l.node.setPosition(0, -29, 0);typography(l,'label'); }
         this.bind(knife, () => encounter.combat.knife()); this.bind(dodge, () => encounter.combat.dodge());
         const pause = safe.getChildByName('Pause button')!; pause.off(Node.EventType.TOUCH_END);
         pause.getChildByName('Panel')!.active = false; pause.getComponent(UITransform)!.setContentSize(58, 58); disc(pause, 27, '#A5BAD1'); this.pauseIcon = icon(pause, 'pause', 30);
@@ -63,7 +61,7 @@ export class CombatHUD {
         const title = label(this.result, 'Result title', '', 450, 100, 34); title.setPosition(0, 48, 0); this.resultTitle = title.getComponentInChildren(Label)!;
         const replay = label(this.result, 'Replay button', 'RESTART ENCOUNTER', 340, 68, 24); panel(replay, 340, 68); replay.setPosition(0, -60, 0);
         this.bind(replay, () => encounter.restart()); this.result.active = false;
-        this.guide = label(safe, 'Combat controls guide', 'MOVE  WASD / arrows\nFIRE  J / mouse    SLASH  K (15s)\nDODGE  Space    PAUSE  Esc', 360, 86, 17);
+        this.guide = label(safe, 'Combat controls guide', 'MOVE  Joystick\nAUTO FIRE  Nearby enemies\nTAP  Sword / Dodge', 360, 86, 17);
         panel(this.guide, 360, 86); const guideWidget = this.guide.addComponent(Widget);
         guideWidget.isAlignHorizontalCenter = true; guideWidget.isAlignBottom = true; guideWidget.bottom = 52; guideWidget.alignMode = Widget.AlignMode.ALWAYS;
         for (let i = 0; i < Skills.length; i++) {
@@ -73,9 +71,6 @@ export class CombatHUD {
         }
         this.node = ui(safe, 'HUD layer', 1280, 720);stretch(this.node);
         for (const child of [...safe.children]) if (child !== this.node) { child.removeFromParent(); this.node.addChild(child); }
-        const blocked = [hp, count, pistol, knife, dodge, pause, replay, this.result, this.guide, this.node.getChildByName('Movement joystick')!];
-        blocked.push(xp);
-        encounter.combat.blocksMouse = p => encounter.paused || encounter.state !== 'playing' || encounter.selecting || blocked.some(n => n.activeInHierarchy && n.getComponent(UITransform)!.hitTest(p));
         this.refresh();
     }
     private refreshBossBars():void {
@@ -114,12 +109,12 @@ export class CombatHUD {
         node.on(Node.EventType.TOUCH_END, release); node.on(Node.EventType.TOUCH_CANCEL, release);
         node.on(Node.EventType.TOUCH_MOVE, (event: EventTouch) => { event.propagationStopped = true; });
     }
-    clearTouches(): void { this.owners.clear(); this.encounter.combat.setFire('touch-pistol', false); }
+    clearTouches(): void { this.owners.clear(); }
     refresh(dt = 0): void {
         const e = this.encounter, hp = e.health.state;
-        const text = (label: Label, value: string) => { if (label.string !== value) label.string = value; };
+        const text = localizedText;
         const progress = e.progression; const buildKey = Skills.map(s => progress.rank(s.id)).join();
-        if (this.skillKey !== buildKey) { this.skillKey = buildKey; this.skillRanks.forEach((l, i) => { const n = progress.rank(Skills[i].id); l.string = String(n); l.node.parent!.active = n > 0; }); }
+        if (this.skillKey !== buildKey) { this.skillKey = buildKey; this.skillRanks.forEach((l, i) => { const n = progress.rank(Skills[i].id); localizedText(l, String(n)); l.node.parent!.active = n > 0; }); }
         const key = `${progress.level}:${progress.xp}`;
         this.refreshBossBars();
         if (key !== this.xpKey) {
@@ -134,10 +129,9 @@ export class CombatHUD {
         }
         const bossAlive=e.bosses.some(b=>b.active&&!b.dead);
         text(this.count, `WAVE ${e.spawner.wave} · ${Math.floor(e.elapsed / 60)}:${('0' + Math.floor(e.elapsed % 60)).slice(-2)}\nINFECTED ${e.spawner.alive}${bossAlive?' · BOSS':''}`);
-        text(this.knife, e.combat.knifeCooldown > 1e-6 ? `${Math.ceil(e.combat.knifeCooldown)}s` : 'SLASH / K');
+        text(this.knife, e.combat.knifeCooldown > 1e-6 ? `${Math.ceil(e.combat.knifeCooldown)}s` : 'SLASH');
         this.knife.color = e.combat.knifeCooldown > 1e-6 ? new Color(130,125,148) : new Color(255,171,214);
-        text(this.dodge, e.combat.dodgeCooldown > 0 ? `${e.combat.dodgeCooldown.toFixed(1)}s` : 'SPACE');
-        this.pistol.color = e.combat.firing ? new Color(213, 106, 145) : new Color(232, 226, 226);
+        text(this.dodge, e.combat.dodgeCooldown > 0 ? `${e.combat.dodgeCooldown.toFixed(1)}s` : 'DODGE');
         text(this.pause, ''); if (e.paused !== this.lastPaused) { this.lastPaused = e.paused; this.pauseIcon.destroy(); this.pauseIcon = icon(this.pause.node.parent!, e.paused ? 'play' : 'pause', 30); } this.pausedHint.active = false;
         this.result.active = false; text(this.resultTitle, `RIN HAS FALLEN\nLevel ${e.progression.level} / ${e.kills} kills`);
         if (!e.paused && !e.selecting && e.state === 'playing') this.guideTime -= dt;
