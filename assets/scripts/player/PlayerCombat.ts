@@ -87,7 +87,9 @@ export class PlayerCombat extends Component {
         const origin = this.node.position, facing = this.node.forward, id = this.context.nextHit();
         for (const enemy of this.context.enemies()) if (!enemy.dead && enemy.active &&
             distance(origin, enemy.position) <= C.knifeRange && clearLine(origin, enemy.position, this.context.obstacles)) {
-            enemy.receiveDamage({ amount: C.knifeDamage, id, source: 'Rin', kind: 'knife' });
+            if (enemy.receiveDamage({ amount: C.knifeDamage, id, source: 'Rin', kind: 'knife' })) {
+                enemy.knockback(origin, C.knifeKnockback, C.knifeKnockbackDuration);
+            }
         }
         this.context.effects.knifeSlash(origin, facing, C.knifeRange, C.knifeArc); this.context.player.visual?.play('slash', 0.36); return true;
     }

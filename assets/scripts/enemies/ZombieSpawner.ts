@@ -14,7 +14,8 @@ export class ZombieSpawner {
     visible:((p:PointXZ)=>boolean)|null=null;
     private cooldown = S.baseSpawnInterval;
     onRush: (()=>void)|null = null;
-    nextRushWave = S.rushEveryWaves;
+    nextRushWave = S.rushEveryWaves; // Legacy checkpoint field.
+    nextRushTime = S.rushInterval;
     rushRemaining = 0;
     wave = 1;
     waveSpawned = 0;
@@ -34,8 +35,9 @@ export class ZombieSpawner {
     regularKilled():void {this.killedSinceBoss++;}
     bossStarted():void {this.killedSinceBoss=Math.max(0,this.killedSinceBoss-S.bossKillThreshold);this.spawnedSinceBoss=0;this.nextBossWave+=S.bossEveryWaves;}
     bossDefeated():void {this.nextWave();}
-    captureWaves(){return {killedSinceBoss:this.killedSinceBoss,wave:this.wave,waveSpawned:this.waveSpawned,spawnedSinceBoss:this.spawnedSinceBoss,nextBossWave:this.nextBossWave,cooldown:this.cooldown,nextRushWave:this.nextRushWave,rushRemaining:this.rushRemaining};}
-    restoreWaves(state:(Omit<ReturnType<ZombieSpawner['captureWaves']>,'nextRushWave'|'rushRemaining'|'killedSinceBoss'>&{killedSinceBoss?:number; nextRushWave?:number; rushRemaining?:number})|undefined,bossCount:number,bossAlive:boolean):void {
+    captureWaves(){return {nextRushTime:this.nextRushTime,killedSinceBoss:this.killedSinceBoss,wave:this.wave,waveSpawned:this.waveSpawned,spawnedSinceBoss:this.spawnedSinceBoss,nextBossWave:this.nextBossWave,cooldown:this.cooldown,nextRushWave:this.nextRushWave,rushRemaining:this.rushRemaining};}
+    restoreWaves(state:(Omit<ReturnType<ZombieSpawner['captureWaves']>,'nextRushTime'|'nextRushWave'|'rushRemaining'|'killedSinceBoss'>&{nextRushTime?:number; killedSinceBoss?:number; nextRushWave?:number; rushRemaining?:number})|undefined,bossCount:number,bossAlive:boolean,elapsed=0):void {
+        this.nextRushTime=state?.nextRushTime??(Math.floor(elapsed/S.rushInterval)+1)*S.rushInterval;
         if(state){this.killedSinceBoss=state.killedSinceBoss??0;this.wave=state.wave;this.waveSpawned=state.waveSpawned;this.spawnedSinceBoss=state.spawnedSinceBoss;this.nextBossWave=state.nextBossWave;this.cooldown=state.cooldown;this.nextRushWave=state.nextRushWave??(Math.floor(this.wave/S.rushEveryWaves)+1)*S.rushEveryWaves;this.rushRemaining=state.rushRemaining??0;this.applySpeed();return;}
         this.killedSinceBoss=0;
         // Old checkpoints have no historical spawn counts: never infer them from kills.
@@ -92,8 +94,8 @@ export class ZombieSpawner {
         if(!bossAlive&&this.waveSpawned>=this.waveSpawnBudget)this.nextWave();
         // Scalar milestones avoid an unbounded queue. Bosses take priority over rushes.
         const bossPending=bossAlive||this.bossReady;
-        if(!bossPending&&this.rushRemaining<=0&&this.wave>=this.nextRushWave){
-            this.nextRushWave+=S.rushEveryWaves;this.rushRemaining=S.rushDuration;
+        if(!bossPending&&this.rushRemaining<=0&&elapsed>=this.nextRushTime){
+            this.nextRushTime=(Math.floor(elapsed/S.rushInterval)+1)*S.rushInterval;this.rushRemaining=S.rushDuration;
             this.cooldown=0;this.onRush?.();
         }
         const rushing=!bossPending&&this.rushRemaining>0;
@@ -112,7 +114,7 @@ export class ZombieSpawner {
         for(const state of states){const enemy=this.create(state.kind,state,state.max/C[state.kind].hp,1+Math.min(4,Math.floor(elapsed/S.phaseSeconds))*.15,false);if(enemy)enemy.health.current=state.hp;}
     }
     reset(): void {
-        this.nextRushWave=S.rushEveryWaves;this.rushRemaining=0;this.killedSinceBoss=0;
+        this.nextRushTime=S.rushInterval;this.nextRushWave=S.rushEveryWaves;this.rushRemaining=0;this.killedSinceBoss=0;
         this.wave=1;this.waveSpawned=0;this.spawnedSinceBoss=0;this.nextBossWave=S.bossEveryWaves;
         this.enemies.forEach(e => e.node.active = false); this.cooldown = S.baseSpawnInterval;
         const initial: [ZombieKind, number, number][] = [['walker', -6, 2], ['walker', 0, -7], ['walker', 6, -2], ['runner', -3, 7], ['brute', 4, -7]];

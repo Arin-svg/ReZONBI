@@ -91,6 +91,7 @@ export class SignalTyrant extends ZombieBase {
         return received;
     }
     stun(_duration: number): void { /* Heavy boss resists stun; its recovery window stays predictable. */ }
+    knockback(_origin: PointXZ, _amount: number, _duration: number): void { /* Heavy boss stays anchored to its attack telegraphs. */ }
     investigate(_p: PointXZ): void { /* Boss already tracks Rin. */ }
     tickDeath(dt: number): void {
         if (!this.dead) return;

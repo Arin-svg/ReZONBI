@@ -24,7 +24,7 @@ export const SurvivalConfig = {
     bossEveryWaves: 5, bossKillThreshold: 100, bossStrengthMultiplier: 1.5, maxEnemies: 24, phaseSeconds: 30,
     baseSpawnBudget: 8, waveGrowth: 1.25, baseSpawnInterval: 4, minSpawnInterval: .4, spawnGrowthPerMinute: .05,
     waveFrequencyGrowth: 1.10, speedEveryWaves: 5, speedGrowth: 1.03, maxSpeedMultiplier: 1.3,
-    rushEveryWaves: 3, rushDuration: 10, rushFrequencyMultiplier: 4, rushMinInterval: .2,
+    rushEveryWaves: 3, rushInterval: 60, rushDuration: 10, rushFrequencyMultiplier: 4, rushMinInterval: .2,
     bruteChances: [.12, .15, .18, .2, .22],
     runnerChances: [.1, .25, .4, .5, .55],
     minSpawnDistance: 7, maxSpawnDistance: 15,
@@ -40,7 +40,8 @@ export const CombatConfig = {
     maxHP: 400, hitProtection: 0.35,
     pistolDamage: 24, pistolInterval: 0.25, pistolRange: 12,
     // Active area-slash skill: every visible enemy around Rin, once per cast.
-    knifeDamage: 100, knifeRange: 3.2, knifeCooldown: 15, knifeArc: 360,
+    knifeDamage: 100, knifeRange: 3.8, knifeCooldown: 15, knifeArc: 360,
+    knifeKnockback: 1.6, knifeKnockbackDuration: 0.2,
     dodgeDistance: 3.5, dodgeDuration: 0.25, dodgeCooldown: 3, dodgeInvulnerability: 0.25,
     enemyRadius: 0.34, maxEnemies: 5, repathInterval: 0.5,
     walker: { hp: 80, speed: 2, damage: 15, range: 1.4, cooldown: 1.5, detection: 8, windup: 0.38 },

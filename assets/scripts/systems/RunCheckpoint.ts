@@ -27,6 +27,7 @@ export function parseRun(raw:string|null):RunCheckpoint|null {
         if(s.world!==undefined){const w=s.world;if(!w||!Number.isInteger(w.seed)||!finite(w.seed,0,0xffffffff)||!finite(w.originX,-1e12,1e12)||!finite(w.originZ,-1e12,1e12)||w.originX%36!==0||w.originZ%36!==0)return null;}
         if(s.waves!==undefined){const w=s.waves;
             if(w?.killedSinceBoss!==undefined&&(!Number.isSafeInteger(w.killedSinceBoss)||!finite(w.killedSinceBoss,0,Number.MAX_SAFE_INTEGER)))return null;
+            if(w?.nextRushTime!==undefined&&(!Number.isSafeInteger(w.nextRushTime)||!finite(w.nextRushTime,S.rushInterval,1e12+S.rushInterval)||w.nextRushTime%S.rushInterval!==0))return null;
             if(w?.nextRushWave!==undefined&&(!Number.isInteger(w.nextRushWave)||!finite(w.nextRushWave,S.rushEveryWaves,1e6+S.rushEveryWaves)||w.nextRushWave%S.rushEveryWaves!==0))return null;
             if(w?.rushRemaining!==undefined&&!finite(w.rushRemaining,0,S.rushDuration))return null;
             if(!w||!Number.isInteger(w.wave)||!finite(w.wave,1,1e6)||!Number.isInteger(w.waveSpawned)||!finite(w.waveSpawned,0,Number.MAX_SAFE_INTEGER)||!Number.isInteger(w.spawnedSinceBoss)||!finite(w.spawnedSinceBoss,0,Number.MAX_SAFE_INTEGER)||w.nextBossWave!==(s.bossCount+1)*S.bossEveryWaves||!finite(w.cooldown,0,S.baseSpawnInterval))return null;
@@ -42,6 +43,6 @@ export function restoreRun(e:CombatEncounter,s:RunCheckpoint):void {
     for(const skill of Skills)if(s.levels[skill.id])e.progression.levels[skill.id]=s.levels[skill.id];
     e.noise.pressure=s.noise;[e.combat.pistolCooldown,e.combat.knifeCooldown,e.combat.dodgeCooldown]=s.cooldowns;
     e.spawner.restoreCheckpoint(s.enemies,s.elapsed);e.restoreBossCheckpoint(s.bosses);
-    e.spawner.restoreWaves(s.waves,s.bossCount,s.bosses.length>0);
+    e.spawner.restoreWaves(s.waves,s.bossCount,s.bosses.length>0,s.elapsed);
     for(const item of s.pickups)e.pickups.drop(item,item.value);
 }

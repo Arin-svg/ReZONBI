@@ -36,6 +36,9 @@ export class ZombieBase extends Component implements Damageable {
     private hurtTime = 0;
     private stunTime = 0;
     private deathTime = 0;
+    private knockbackTime = 0;
+    private knockbackX = 0;
+    private knockbackZ = 0;
     get position(): PointXZ { return this.node.position; }
     get dead(): boolean { return this.health.dead; }
     get active(): boolean { return this.node.activeInHierarchy && this.enabled; }
@@ -60,6 +63,7 @@ export class ZombieBase extends Component implements Damageable {
         this.node.active = true; this.node.setPosition(this.spawn.x, 0.06, this.spawn.z);
         this.node.setRotationFromEuler(0, 0, 0); this.health.reset(); this.state = 'Idle';
         this.path = []; this.repath = this.cooldown = this.attackTime = this.hurtTime = this.stunTime = this.deathTime = 0;
+        this.knockbackTime = this.knockbackX = this.knockbackZ = 0;
         this.visual.tick(0, 0, false, false, 0, 1);
     }
     /** M3 hook: a listener can pass a heard noise position without coupling noise here. */
@@ -68,6 +72,24 @@ export class ZombieBase extends Component implements Damageable {
         this.destination = { x: position.x, z: position.z }; this.state = 'Investigate'; this.repath = 0;
     }
     stun(duration: number): void { if (!this.dead) { this.stunTime = Math.max(this.stunTime, duration); this.state = 'Stunned'; this.attackTime = 0; } }
+    knockback(origin: PointXZ, amount: number, duration: number): void {
+        if (!this.active || amount <= 0 || duration <= 0) return;
+        const dx = this.position.x - origin.x, dz = this.position.z - origin.z;
+        const length = Math.hypot(dx, dz);
+        this.knockbackX = (length > .001 ? dx / length : 1) * amount / duration;
+        this.knockbackZ = (length > .001 ? dz / length : 0) * amount / duration;
+        this.knockbackTime = duration;
+        this.path = []; this.repath = 0; this.attackTime = 0;
+        this.stun(duration);
+    }
+    private tickKnockback(dt: number): void {
+        const step = Math.min(Math.max(0, dt), this.knockbackTime);
+        if (step <= 0) return;
+        const p = moveAndSlide(this.position, this.knockbackX * step, this.knockbackZ * step,
+            C.enemyRadius, GameConfig.arenaHalfSize, this.context.obstacles);
+        this.node.setPosition(p.x, this.node.position.y, p.z);
+        this.knockbackTime = Math.max(0, this.knockbackTime - step);
+    }
     receiveDamage(hit: DamageHit): boolean {
         if (!this.health.damage(hit)) return false;
         if(hit.kind==='pistol')AudioManager.instance?.playSfx('bullet_impact');
@@ -79,12 +101,14 @@ export class ZombieBase extends Component implements Damageable {
     }
     tickDeath(dt: number): void {
         if (!this.dead || !this.node.active) return;
+        this.tickKnockback(dt);
         this.deathTime += dt; this.visual.tick(dt, 0, false, false, this.deathTime, 0);
         if (this.deathTime >= 0.7) this.node.active = false;
     }
     tick(dt: number): void {
         if (this.dead) { this.tickDeath(dt); return; }
         if (!this.active) return;
+        this.tickKnockback(dt);
         this.health.tick(dt); this.cooldown = Math.max(0, this.cooldown - dt); this.hurtTime = Math.max(0, this.hurtTime - dt);
         const player = this.context.player.position, d = distance(this.position, player);
         const visible = clearLine(this.position, player, this.context.obstacles);
