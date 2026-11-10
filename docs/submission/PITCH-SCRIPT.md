@@ -1,5 +1,7 @@
 # Re:ZONBI pitch and demo
 
+10 November update: source now includes optional Huawei account sign-in, but actual Huawei runtime verification is pending. For a newly rebuilt demo, describe it as implemented but unverified; the original submission closing statement below applies to the earlier RPK. See HMS-INTEGRATION.md.
+
 Working three-minute script; adjust to the organizer's actual time limit. Add the entrant/team name before presenting. Proposed audience and positioning below are design choices, not market-research findings.
 
 ## 0:00–0:25 — Concept

@@ -1,6 +1,8 @@
 # Submission readiness — 30 October 2026
 
-Target confirmed by entrant: Huawei Quick Game RPK. HMS intentionally omitted, consistent with the organizer message supplied in chat. The supplied message states 1 November 2026, 11:59 pm as the deadline; confirm submission portal/timezone details with the organizer.
+Update, 10 November 2026: optional Huawei Quick Game account sign-in has been added to source using App ID 119747847 and package com.arinja.rezonbi. Mock checks pass; Huawei authentication/device testing remains pending. See [HMS integration status](HMS-INTEGRATION.md). The checklist and package audit below describe the earlier submission build, not the new source changes.
+
+Original submission scope: Huawei Quick Game RPK, with HMS intentionally omitted at that time. The supplied organizer message stated 1 November 2026, 11:59 pm as the deadline.
 
 ## Prepared
 

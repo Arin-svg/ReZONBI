@@ -1,4 +1,5 @@
 import { AudioManager } from '../systems/AudioManager';
+import { HuaweiAccount } from '../systems/HuaweiAccount';
 import { BlockInputEvents, Color, EventTouch, Vec3, director, game, Graphics, Label, Node, sys, UITransform } from 'cc';
 import type { CombatEncounter } from '../core/CombatEncounter';
 import { captureRun, parseRun, restoreRun } from '../systems/RunCheckpoint';
@@ -7,7 +8,7 @@ import { label, panel, pin, typography, ui } from './ExplorationHUD';
 import { getLanguage, setLanguage } from './Localization';
 import { staticGraphics } from './StaticUIGraphics';
 
-type Page='home'|'game'|'pause'|'settings'|'tutorial'|'defeat'|'victory'|'confirm'|'dialogue'|'stats';
+type Page='home'|'game'|'pause'|'settings'|'tutorial'|'defeat'|'victory'|'confirm'|'dialogue'|'stats'|'account';
 export type Notice='Zombie Rush!'|'Supply Found'|'Ammo Low'|'Health Low'|'Skill Ready'|'Door Locked'|'Item Obtained'|'Objective Updated'|'Area Cleared'|'Save Point';
 const SAVE='rezonbi.run.v1', SETTINGS='rezonbi.ui.settings.v1';
 const RECORD='rezonbi.record.v1';
@@ -17,6 +18,7 @@ TUTORIAL.push(['YOUR NEXT CHALLENGE','Collect EXP, choose upgrades, and survive.
 /** Screen flow owns UI pause only; simulation and combat remain in the encounter. */
 export class GameUI {
     page:Page='home';
+    private huawei = new HuaweiAccount();
     private audio:AudioManager;
     private musicPage:'home'|'combat'|'boss'|'defeat'|'victory'='home';
     private overlay:Node;
@@ -89,6 +91,7 @@ export class GameUI {
         this.audio.playSfx('pause');
         if(this.page==='game'){if(this.e.selecting||this.e.state!=='playing')return true;this.save();this.show('pause');}
         else if(this.page==='pause')this.show('game');
+        else if(this.page==='account')this.show('settings');
         else if(['settings','tutorial','stats','dialogue'].indexOf(this.page)>=0)this.show(this.back);
         return true;
     }
@@ -144,7 +147,17 @@ export class GameUI {
                 this.audioSlider(frame,'sfx',60);
                 this.button('GRAPHICS  ‹  '+this.quality.toUpperCase()+'  ›',-10,()=>{this.quality=this.quality==='high'?'low':'high';this.applyQuality();try{sys.localStorage.setItem(SETTINGS,JSON.stringify({quality:this.quality}));}catch{}this.show('settings');},false,true,frame);
                 this.button('LANGUAGE: ENGLISH',-80,()=>{setLanguage(getLanguage()==='en'?'ms':'en',this.safe);this.show('settings');},false,true,frame);
-                heading(frame,'',-140,14);this.button('BACK',-210,()=>this.show(this.back),true,true,frame);
+                this.button('HUAWEI ACCOUNT',-145,()=>this.show('account'),false,true,frame);
+                this.button('BACK',-210,()=>this.show(this.back),true,true,frame);
+            }else if(page==='account'){
+                const ms=getLanguage()==='ms';
+                heading(frame,'HUAWEI ACCOUNT',220,30);
+                heading(frame,ms?'Log masuk adalah pilihan. Huawei memproses data akaun.\nBaca dasar privasi Huawei sebelum meneruskan.\nNama paparan digunakan untuk sesi ini sahaja.\nSimpanan kekal pada peranti; tiada simpanan awan.':'Sign-in is optional. Huawei processes account data.\nRead Huawei\'s privacy policy before continuing.\nYour display name is used only for this session.\nSaves stay on this device; there is no cloud save.',120,17);
+                const messages={guest:'Not signed in',pending:'Signing in...', 'signed-in':'Signed in',unavailable:'Huawei sign-in is unavailable in this environment.',cancelled:'Sign-in cancelled. You can try again.',failed:'Sign-in failed or timed out. You can try again.','verification-required':'Server verification is required. Continuing as guest.'};
+                heading(frame,messages[this.huawei.status]+(this.huawei.displayName?'\n'+this.huawei.displayName:''),15,18);
+                this.button('HUAWEI PRIVACY POLICY',-65,()=>sys.openURL('https://consumer.huawei.com/en/privacy/privacy-policy/'),false,true,frame);
+                this.button('SIGN IN WITH HUAWEI',-135,()=>this.huawei.signIn(()=>{if(this.page==='account')this.show('account');}),true,this.huawei.status!=='pending'&&this.huawei.status!=='signed-in',frame);
+                this.button('BACK',-210,()=>this.show('settings'),false,true,frame);
             }else if(page==='tutorial'){
                 heading(frame,'FIELD GUIDE',220,34);heading(frame,TUTORIAL[this.tutorialPage][0],140,23);
                 heading(frame,TUTORIAL[this.tutorialPage][1],35,20);heading(frame,`${this.tutorialPage+1} / ${TUTORIAL.length}`,-65,16);
@@ -187,6 +200,7 @@ export class GameUI {
         const cover=Math.max(width/1280,height/720);this.art.setScale(cover,cover,1);
     }
     tick(dt:number):void {
+        this.huawei.tick(dt);
         this.syncMusic();this.audio.tick(dt);
         this.layout();const e=this.e;
         if(this.page==='game'&&e.state==='defeat'){this.updateRecord();this.removeSave();this.show('defeat');return;}

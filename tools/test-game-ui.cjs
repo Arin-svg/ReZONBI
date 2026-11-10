@@ -29,6 +29,13 @@ for(const [w,h] of [[960,720],[1280,720],[1560,720]]){safe.getComponent(UITransf
 const {captureRun,parseRun}=load('assets/scripts/systems/RunCheckpoint.ts');const good=captureRun(e);assert.ok(parseRun(JSON.stringify(good)));for(const bad of [null,{}, {...good,player:{x:Infinity,z:0,hp:10}},{...good,cooldowns:[0,-2,0]},{...good,levels:{blade:99}}])assert.equal(parseRun(JSON.stringify(bad)),null);
 console.log('PASS UI: homepage, disabled controls, dialogue, pause, settings, tutorial, confirmations, save/continue, victory, defeat/restart, hold input, landscape fit and save validation');
 
+flow.show('home');click('SETTINGS');click('HUAWEI ACCOUNT');
+assert.equal(flow.page,'account');assert.equal(e.paused,true);
+click('SIGN IN WITH HUAWEI');assert.equal(flow.huawei.status,'unavailable');
+click('BACK');assert.equal(flow.page,'settings');click('BACK');assert.equal(flow.page,'home');
+console.log('PASS account screen navigation and browser-unavailable sign-in leaves guest gameplay accessible');
+flow.show('game');
+
 const locale=load('assets/scripts/ui/Localization.ts');
 const caption=name=>find(safe,name).getComponentInChildren(Label).string;
 flow.routePause();click('SETTINGS');
